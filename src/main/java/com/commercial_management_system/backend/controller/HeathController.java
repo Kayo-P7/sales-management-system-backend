@@ -11,7 +11,7 @@ import java.util.Map;
 public class HeathController {
 
 
-    @GetMapping
+    @GetMapping("/test")
     public Map<String, String> health(){
         return Map.of("status","UP");
     }

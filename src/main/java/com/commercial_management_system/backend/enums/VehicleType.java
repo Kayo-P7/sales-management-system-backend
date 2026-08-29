@@ -1,4 +1,7 @@
 package com.commercial_management_system.backend.enums;
 
-public enum ProductCategory {
+public enum VehicleType {
+
+    MOTO,
+    CAR
 }
