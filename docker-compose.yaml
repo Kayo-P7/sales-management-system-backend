@@ -1,0 +1,17 @@
+name: sales-management-system
+
+services:
+  database:
+    image: postgres:16
+    container_name: sales-management-system-db
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_sales:/var/lib/postgresql/data
+
+volumes:
+  postgres_sales:
