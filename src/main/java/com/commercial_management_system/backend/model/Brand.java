@@ -11,9 +11,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "brand_tb")
-@Getter
-@Setter
+@Table(name = "brand")
 @Data
 @NoArgsConstructor
 public class Brand {

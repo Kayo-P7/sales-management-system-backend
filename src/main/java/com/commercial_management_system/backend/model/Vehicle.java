@@ -12,9 +12,8 @@ import java.math.BigDecimal;
 
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 @Data
-@Table(name = "vehicle_tb")
+@Table(name = "vehicle")
 public class Vehicle {
 
     @Id
@@ -32,4 +31,13 @@ public class Vehicle {
     @ManyToOne
     @JoinColumn(name = "brand_id", nullable = false)
     private Brand brand;
+
+
+    public Vehicle(String name, Color color, VehicleType vehicleType, BigDecimal price, Brand brand) {
+        this.name = name;
+        this.color = color;
+        this.vehicleType = vehicleType;
+        this.price = price;
+        this.brand = brand;
+    }
 }
