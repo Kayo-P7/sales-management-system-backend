@@ -1,5 +1,6 @@
 package com.commercial_management_system.backend.model;
 
+import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -40,12 +41,17 @@ public class User implements UserDetails {
     @Column(name = "user_type")
     private UserType userType;
 
-    public User(String name, String email, String telephone, String password, UserType userType) {
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_status", nullable = false)
+    private UserStatus userStatus;
+
+    public User(String name, String email, String telephone, String password, UserType userType, UserStatus userStatus) {
         this.name = name;
         this.email = email;
         this.telephone = telephone;
         this.password = password;
         this.userType = userType;
+        this.userStatus = userStatus;
     }
 
     @Override

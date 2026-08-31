@@ -38,7 +38,8 @@ public class AuthService {
                 request.getEmail(),
                 request.getTelephone(),
                 encryptedPassword,
-                request.getUserType()
+                request.getUserType(),
+                request.getUserStatus()
         );
         USER_REPOSITORY.save(newUser);
         return true;

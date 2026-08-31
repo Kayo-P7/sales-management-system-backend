@@ -1,5 +1,6 @@
 package com.commercial_management_system.backend.dto.request;
 
+import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -28,4 +29,7 @@ public class RegisterRequest {
 
     @NotNull
     private UserType userType;
+
+    @NotBlank
+    private UserStatus userStatus;
 }
