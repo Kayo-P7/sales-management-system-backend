@@ -3,6 +3,7 @@ package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.dto.request.UserRequest;
 import com.commercial_management_system.backend.enums.UserStatus;
+import com.commercial_management_system.backend.exceptions.UserAlreadyActivedException;
 import com.commercial_management_system.backend.exceptions.UserAlreadyDeactivedException;
 import com.commercial_management_system.backend.exceptions.UserNotFoundException;
 import com.commercial_management_system.backend.model.User;
@@ -21,10 +22,8 @@ public class UserService {
     private final UserRepository USER_REPOSITORY;
 
 
-
     @Transactional()
     public User cadastrar(UserRequest userRequest){
-
         User user = new User(
                 userRequest.name(),
                 userRequest.email(),
@@ -75,5 +74,15 @@ public class UserService {
         return USER_REPOSITORY.save(user);
     }
 
+    @Transactional
+    public User ativar(Long id){
+        User user = buscarPorId(id);
+        if(user.getUserStatus() == UserStatus.ACTIVE){
+            throw new UserAlreadyActivedException();
+        }
+
+        user.setUserStatus(UserStatus.ACTIVE);
+        return user;
+    }
 }
 
