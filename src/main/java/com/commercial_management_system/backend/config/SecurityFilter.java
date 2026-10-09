@@ -19,32 +19,40 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
 
-    private final TokenService TOKEN_SERVICE;
-    private final UserRepository USER_REPOSITORY;
+    private final TokenService tokenService;
+    private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        String token = recoverToken(request);
-        if (token != null) {
-            String login = TOKEN_SERVICE.validateToken(token);
-            if (!login.isEmpty()) {
-                UserDetails user = USER_REPOSITORY.findByEmail(login).orElse(null);
-                if (user != null) {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+        // extrai o token jwt do cabecalho authorization
+        String tokenJWT = recuperarToken(request);
+
+        if (tokenJWT != null) {
+            // valida a assinatura e extrai o subject (email)
+            String login = tokenService.getSubject(tokenJWT);
+            if (login != null) {
+                // carrega o usuario e suas permissoes do banco
+                UserDetails usuario = userRepository.findByEmail(login).orElse(null);
+                if (usuario != null && usuario.isEnabled()) {
+                    // injeta a autenticacao no contexto de seguranca da requisicao atual
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities());
+                            usuario, null, usuario.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
         }
+        // continua a execucao da cadeia de filtros
         filterChain.doFilter(request, response);
     }
 
-    private String recoverToken(HttpServletRequest request) {
+    private String recuperarToken(HttpServletRequest request) {
+        // recupera o token bearer removendo o prefixo
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
         }
-        return authHeader.replace("Bearer ", "");
+        return null;
     }
 }
