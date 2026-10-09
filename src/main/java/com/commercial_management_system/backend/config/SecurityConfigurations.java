@@ -24,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfigurations {
 
     private final SecurityFilter securityFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -43,6 +44,8 @@ public class SecurityConfigurations {
                         // exige autenticacao para qualquer outro endpoint
                         .anyRequest().authenticated()
                 )
+                // aplica limitacao de taxa logo apos cors e antes da autenticacao
+                .addFilterAfter(rateLimitFilter, org.springframework.web.filter.CorsFilter.class)
                 // intercepta as requisicoes com o filtro de token jwt antes do filtro padrao
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
