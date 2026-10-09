@@ -12,8 +12,22 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+  flyway:
+    enabled: false
+
 
 api:
   security:
     token:
       secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  rate-limit:
+    enabled: true
+    auth:
+      capacity: 5
+      refill-tokens: 5
+      refill-duration-in-seconds: 60
+    general:
+      capacity: 10
+      refill-tokens: 10
+      refill-duration-in-seconds: 60
+
