@@ -1,88 +1,99 @@
 package com.commercial_management_system.backend.service;
 
-
-import com.commercial_management_system.backend.dto.request.UserRequest;
+import com.commercial_management_system.backend.dto.user.UserRequest;
+import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.enums.UserStatus;
-import com.commercial_management_system.backend.exceptions.UserAlreadyActivedException;
-import com.commercial_management_system.backend.exceptions.UserAlreadyDeactivedException;
-import com.commercial_management_system.backend.exceptions.UserNotFoundException;
+import com.commercial_management_system.backend.exception.UserAlreadyActivedException;
+import com.commercial_management_system.backend.exception.UserAlreadyDeactivedException;
+import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
+import com.commercial_management_system.backend.exception.UserNotFoundException;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    private final UserRepository USER_REPOSITORY;
+    // cadastra novo usuario gerando hash seguro para a senha
+    @Transactional
+    public User salvar(UserRequest userRequest) {
+        if (this.userRepository.existsByEmail(userRequest.email())) {
+            throw new UserAlreadyExistsException("email ja cadastrado no sistema");
+        }
+        if (this.userRepository.existsByTelephone(userRequest.telephone())) {
+            throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
+        }
 
-
-    @Transactional()
-    public User cadastrar(UserRequest userRequest){
+        String encodedPassword = this.passwordEncoder.encode(userRequest.password());
         User user = new User(
                 userRequest.name(),
                 userRequest.email(),
                 userRequest.telephone(),
-                userRequest.password(),
+                encodedPassword,
                 userRequest.userType(),
-                UserStatus.ACTIVE);
+                UserStatus.ACTIVE
+        );
 
-        return USER_REPOSITORY.save(user);
+        return this.userRepository.save(user);
     }
 
+    // busca usuario e converte para dto de resposta
     @Transactional(readOnly = true)
-    public User buscarPorId(Long id){
-        return USER_REPOSITORY.findById(id)
+    public UserResponse buscarPorId(Long id) {
+        User user = buscarEntidadePorId(id);
+        return UserResponse.from(user);
+    }
+
+    // busca entidade usuario para uso interno
+    @Transactional(readOnly = true)
+    public User buscarEntidadePorId(Long id) {
+        return this.userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
     }
 
+    // lista usuarios com suporte a paginacao e filtro opcional por nome
     @Transactional(readOnly = true)
-    public List<User> listarTodos(){
-        return USER_REPOSITORY.findAll();
+    public Page<UserResponse> listar(String name, Pageable pageable) {
+        if (name != null && !name.isBlank()) {
+            return this.userRepository.findByNameContainingIgnoreCase(name.trim(), pageable)
+                    .map(UserResponse::from);
+        }
+        return this.userRepository.findAll(pageable)
+                .map(UserResponse::from);
     }
 
-    @Transactional(readOnly = true)
-    public User buscarPorEmail(String email){
-        return USER_REPOSITORY.findByEmail(email.trim()).orElseThrow(UserNotFoundException::new);
-    }
-
-    @Transactional(readOnly = true)
-    public User buscarPorNome(String name){
-        return USER_REPOSITORY.findByNameContainingIgnoreCase(name.trim()).orElseThrow(UserNotFoundException::new);
-    }
-
-    @Transactional(readOnly = true)
-    public User buscarPorTelefone(String telephone){
-        return USER_REPOSITORY.findByTelephone(telephone.trim())
-                .orElseThrow(UserNotFoundException::new);
-    }
-
+    // desativa usuario no sistema sem excluir o registro fisico
     @Transactional
-    public User desativar(Long id){
-        User user = buscarPorId(id);
+    public void desativar(Long id) {
+        User user = buscarEntidadePorId(id);
 
-        if(user.getUserStatus() == UserStatus.INACTIVE){
+        if (user.getUserStatus() == UserStatus.INACTIVE) {
             throw new UserAlreadyDeactivedException();
         }
 
         user.setUserStatus(UserStatus.INACTIVE);
-        return USER_REPOSITORY.save(user);
+        this.userRepository.save(user);
     }
 
+    // reativa usuario inativo no sistema
     @Transactional
-    public User ativar(Long id){
-        User user = buscarPorId(id);
-        if(user.getUserStatus() == UserStatus.ACTIVE){
+    public void ativar(Long id) {
+        User user = buscarEntidadePorId(id);
+
+        if (user.getUserStatus() == UserStatus.ACTIVE) {
             throw new UserAlreadyActivedException();
         }
 
         user.setUserStatus(UserStatus.ACTIVE);
-        return user;
+        this.userRepository.save(user);
     }
 }
-

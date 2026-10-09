@@ -1,47 +1,40 @@
 package com.commercial_management_system.backend.service;
 
-import com.commercial_management_system.backend.dto.request.AuthenticationRequest;
-import com.commercial_management_system.backend.dto.request.RegisterRequest;
-import com.commercial_management_system.backend.dto.response.AuthenticationResponse;
+import com.commercial_management_system.backend.dto.RegisterRequest;
+import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository USER_REPOSITORY;
-    private final PasswordEncoder PASSWORD_ENCODER;
-    private final TokenService TOKEN_SERVICE;
-    private final AuthenticationManager AUTHENTICATION_MANAGER;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthenticationResponse login(AuthenticationRequest request) {
-        var usernamePassword = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-        var auth = this.AUTHENTICATION_MANAGER.authenticate(usernamePassword);
-        var token = TOKEN_SERVICE.generateToken((User) auth.getPrincipal());
-        return new AuthenticationResponse(token);
-    }
-
-    public boolean register(RegisterRequest request) {
-        if (USER_REPOSITORY.findByEmail(request.getEmail()).isPresent()) {
-            return false;
+    // registra novo usuario com senha criptografada e checagem de unicidade
+    @Transactional
+    public void register(RegisterRequest request) {
+        if (this.userRepository.existsByEmail(request.email())) {
+            throw new UserAlreadyExistsException("email ja cadastrado no sistema");
         }
-        
-        String encryptedPassword = PASSWORD_ENCODER.encode(request.getPassword());
+        if (this.userRepository.existsByTelephone(request.telephone())) {
+            throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
+        }
+
+        String senhaCriptografada = this.passwordEncoder.encode(request.password());
         User newUser = new User(
-                request.getName(),
-                request.getEmail(),
-                request.getTelephone(),
-                encryptedPassword,
-                request.getUserType(),
-                request.getUserStatus()
+                request.name(),
+                request.email(),
+                request.telephone(),
+                senhaCriptografada,
+                request.userType(),
+                request.userStatus()
         );
-        USER_REPOSITORY.save(newUser);
-        return true;
+        this.userRepository.save(newUser);
     }
 }
