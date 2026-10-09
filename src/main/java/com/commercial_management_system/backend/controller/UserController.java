@@ -1,64 +1,135 @@
 package com.commercial_management_system.backend.controller;
 
-import com.commercial_management_system.backend.dto.request.UserRequest;
-import com.commercial_management_system.backend.dto.response.UserResponse;
+import com.commercial_management_system.backend.dto.erro.ErroResponse;
+import com.commercial_management_system.backend.dto.user.UserRequest;
+import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "usuários", description = "gerenciamento de contas e usuários do sistema")
 @RestController
-@RequestMapping("/api/v1/user")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
-    private final UserService USER_SERVICE;
+    private final UserService userService;
 
-    @Operation(summary = "cadastrar usuário", description = "cria um novo usuário no sistema")
+    // cadastra um novo usuario no sistema e retorna 201 created
+    @Operation(summary = "cadastrar usuário", description = "cria um novo usuario no sistema (requer perfil ROLE_ADMIN)")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "usuário cadastrado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "dados de requisição inválidos")
+            @ApiResponse(responseCode = "201", description = "usuario cadastrado com sucesso",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "400", description = "dados de requisicao invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "409", description = "usuario ja cadastrado no sistema",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse cadastrar(@Valid @RequestBody UserRequest userRequest) {
-        return UserResponse.from(USER_SERVICE.cadastrar(userRequest));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> cadastrar(@Valid @RequestBody UserRequest userRequest) {
+        UserResponse response = UserResponse.from(this.userService.salvar(userRequest));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "listar todos os usuários", description = "retorna uma lista com todos os usuários cadastrados")
-    @ApiResponse(responseCode = "200", description = "lista retornada com sucesso")
-    @GetMapping
-    public List<UserResponse> listarTodos() {
-        return USER_SERVICE.listarTodos().stream().map(UserResponse::from).toList();
-    }
-
-    @Operation(summary = "buscar usuário por nome", description = "Retorna os detalhes de um usuário buscando pelo seu nome")
+    // lista usuarios de forma paginada com suporte a filtro opcional por nome
+    @Operation(summary = "listar usuários", description = "retorna pagina de usuarios com filtro opcional por nome")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Usuário encontrado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+            @ApiResponse(responseCode = "200", description = "pagina de usuarios retornada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
-    @GetMapping("/nome/{name}") // Alterado para evitar conflito com a rota /{id}
-    public UserResponse buscarPorNome(@PathVariable String name) {
-        return UserResponse.from(USER_SERVICE.buscarPorNome(name));
+    @GetMapping
+    public ResponseEntity<Page<UserResponse>> listar(
+            @Parameter(description = "filtro opcional por nome do usuario")
+            @RequestParam(required = false) String name,
+            @Parameter(description = "parametros de paginacao (page, size, sort)")
+            Pageable pageable
+    ) {
+        Page<UserResponse> page = this.userService.listar(name, pageable);
+        return ResponseEntity.ok(page);
     }
 
-    @Operation(summary = "buscar usuário por ID", description = "Retorna os detalhes de um usuário específico")
+    // busca usuario especifico pelo identificador unico
+    @Operation(summary = "buscar usuário por id", description = "retorna os detalhes de um usuario especifico")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "usuário encontrado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "usuário não encontrado")
+            @ApiResponse(responseCode = "200", description = "usuario encontrado com sucesso",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "usuario nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @GetMapping("/{id}")
-    public UserResponse buscarPorId(@PathVariable Long id) {
-        return UserResponse.from(USER_SERVICE.buscarPorId(id));
+    public ResponseEntity<UserResponse> buscarPorId(
+            @Parameter(description = "identificador unico do usuario", example = "1")
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(this.userService.buscarPorId(id));
+    }
+
+    // inativa o usuario no sistema sem excluir o registro fisico
+    @Operation(summary = "desativar usuário", description = "altera o status do usuario para inativo (requer perfil ROLE_ADMIN)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "usuario desativado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "usuario nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "409", description = "usuario ja se encontra desativado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> desativar(
+            @Parameter(description = "identificador do usuario a desativar", example = "1")
+            @PathVariable Long id
+    ) {
+        this.userService.desativar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // reativa o acesso do usuario no sistema
+    @Operation(summary = "ativar usuário", description = "altera o status do usuario para ativo (requer perfil ROLE_ADMIN)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "usuario ativado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "usuario nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "409", description = "usuario ja se encontra ativo",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> ativar(
+            @Parameter(description = "identificador do usuario a ativar", example = "1")
+            @PathVariable Long id
+    ) {
+        this.userService.ativar(id);
+        return ResponseEntity.noContent().build();
     }
 }
