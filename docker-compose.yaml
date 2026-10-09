@@ -3,15 +3,47 @@ name: sales-management-system
 services:
   database:
     image: postgres:16
-    container_name: sales-management-system-db
+    container_name: sales-management-db
+    restart: unless-stopped
     ports:
-      - "5439:5432"
+      - "${POSTGRES_HOST_PORT:-5439}:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-sales_management}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_sales:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sales_management}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sales-management-backend
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8089}:${SERVER_PORT:-8089}"
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8089}
+      DB_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-sales_management}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - sales-network
 
 volumes:
   postgres_sales:
+
+networks:
+  sales-network:
+    driver: bridge
