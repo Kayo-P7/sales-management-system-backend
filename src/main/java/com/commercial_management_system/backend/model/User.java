@@ -45,6 +45,9 @@ public class User implements UserDetails {
     @Column(name = "user_status", nullable = false)
     private UserStatus userStatus;
 
+    @Version
+    private Long version;
+
     public User(String name, String email, String telephone, String password, UserType userType, UserStatus userStatus) {
         this.name = name;
         this.email = email;
@@ -56,7 +59,11 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        // mapeia role dinamicamente conforme o tipo do usuario
+        if (this.userType != null) {
+            return List.of(new SimpleGrantedAuthority(this.userType.name()));
+        }
+        return List.of(new SimpleGrantedAuthority(UserType.ROLE_USER.name()));
     }
 
     @Override
@@ -86,6 +93,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        // usuario ativo possui autenticacao habilitada
+        return this.userStatus == UserStatus.ACTIVE;
     }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "brand")
+@Table(name = "brands")
 @Data
 @NoArgsConstructor
 public class Brand {
@@ -23,9 +23,12 @@ public class Brand {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "isActive", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
-    @OneToMany(mappedBy = "brand")
-    private List<Vehicle> vehicle = new ArrayList<>();
+    @Version
+    private Long version;
+
+    @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
+    private List<Vehicle> vehicles = new ArrayList<>();
 }

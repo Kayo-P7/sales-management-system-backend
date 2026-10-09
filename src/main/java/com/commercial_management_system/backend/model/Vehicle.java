@@ -3,37 +3,42 @@ package com.commercial_management_system.backend.model;
 
 import com.commercial_management_system.backend.enums.VehicleType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.awt.*;
 import java.math.BigDecimal;
 
 @Entity
 @NoArgsConstructor
 @Data
-@Table(name = "vehicle")
+@Table(name = "vehicles")
 public class Vehicle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "name", nullable = false)
     private String name;
+
     @Column(name = "color", nullable = false)
-    private Color color;
+    private String color;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "vehicleType", nullable = false)
+    @Column(name = "vehicle_type", nullable = false)
     private VehicleType vehicleType;
+
     @Column(name = "price", nullable = false)
     private BigDecimal price;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id", nullable = false)
     private Brand brand;
 
+    @Version
+    private Long version;
 
-    public Vehicle(String name, Color color, VehicleType vehicleType, BigDecimal price, Brand brand) {
+    public Vehicle(String name, String color, VehicleType vehicleType, BigDecimal price, Brand brand) {
         this.name = name;
         this.color = color;
         this.vehicleType = vehicleType;
