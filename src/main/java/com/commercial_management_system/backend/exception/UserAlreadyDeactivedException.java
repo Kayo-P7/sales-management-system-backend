@@ -1,10 +1,12 @@
-package com.commercial_management_system.backend.exceptions;
+package com.commercial_management_system.backend.exception;
 
 public class UserAlreadyDeactivedException extends RuntimeException {
+
     public UserAlreadyDeactivedException(String message) {
         super(message);
     }
-    public UserAlreadyDeactivedException(){
-        super("User already deactived");
+
+    public UserAlreadyDeactivedException() {
+        super("usuario ja se encontra desativado");
     }
 }

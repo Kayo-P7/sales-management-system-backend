@@ -1,11 +1,12 @@
-package com.commercial_management_system.backend.exceptions;
+package com.commercial_management_system.backend.exception;
 
 public class UserNotFoundException extends RuntimeException {
+
     public UserNotFoundException(String message) {
         super(message);
     }
 
-    public UserNotFoundException(){
-        super("User not found!");
+    public UserNotFoundException() {
+        super("usuario nao encontrado");
     }
 }
