@@ -23,12 +23,11 @@ public class Brand {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Version
-    private Long version;
-
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
     private List<Vehicle> vehicles = new ArrayList<>();
+
+
+    public Brand(String name) {
+        this.name = name;
+    }
 }

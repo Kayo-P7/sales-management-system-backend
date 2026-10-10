@@ -45,8 +45,7 @@ public class BrandController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BrandResponse> cadastrar(@Valid @RequestBody BrandRequest request) {
-        BrandResponse response = BrandResponse.from(this.brandService.salvar(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(brandService.salvar(request));
     }
 
     // lista todas as marcas

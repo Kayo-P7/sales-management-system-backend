@@ -18,11 +18,12 @@ public class BrandService {
 
     // cadastra uma nova marca de veiculo
     @Transactional
-    public Brand salvar(BrandRequest request) {
-        Brand brand = new Brand();
-        brand.setName(request.name());
-        brand.setActive(request.isActive());
-        return this.brandRepository.save(brand);
+    public BrandResponse salvar(BrandRequest request) {
+        Brand brand = new Brand(
+                request.name());
+
+        brandRepository.save(brand);
+        return BrandResponse.from(brand);
     }
 
     // lista todas as marcas cadastradas
@@ -36,7 +37,7 @@ public class BrandService {
     // busca marca por identificador unico
     @Transactional(readOnly = true)
     public BrandResponse buscarPorId(Long id) {
-        Brand brand = this.brandRepository.findById(id)
+        Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("marca nao encontrada"));
         return BrandResponse.from(brand);
     }

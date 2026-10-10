@@ -9,16 +9,12 @@ public record BrandResponse(
         Long id,
 
         @Schema(description = "nome da marca", example = "Toyota")
-        String name,
-
-        @Schema(description = "status de atividade da marca", example = "true")
-        boolean isActive
+        String name
 ) {
     public static BrandResponse from(Brand brand) {
         return new BrandResponse(
                 brand.getId(),
-                brand.getName(),
-                brand.isActive()
+                brand.getName()
         );
     }
 }
