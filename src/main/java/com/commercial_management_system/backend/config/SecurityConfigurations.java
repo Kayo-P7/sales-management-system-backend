@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.CorsFilter;
@@ -42,9 +43,19 @@ public class SecurityConfigurations {
                         // libera login e rotas publicas
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // restringe endpoints operacionais e metricas do actuator para administradores
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         // exige autenticacao para qualquer outro endpoint
                         .anyRequest().authenticated()
+                )
+                // trata falhas de autenticacao com 401 e autorizacao com 403
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "nao autorizado"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "acesso negado"))
                 )
                 // propaga o identificador de correlacao no mdc e na resposta antes dos demais filtros
                 .addFilterBefore(correlationIdFilter, CorsFilter.class)
