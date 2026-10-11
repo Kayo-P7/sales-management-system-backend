@@ -89,6 +89,18 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // captura refresh token invalido, expirado ou revogado e retorna 401 unauthorized
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErroResponse> handleInvalidRefreshToken(
+            InvalidRefreshTokenException ex,
+            HttpServletRequest request) {
+        return build(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
     // captura falhas gerais de autenticacao e retorna 401 unauthorized
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErroResponse> handleAuthenticationException(
