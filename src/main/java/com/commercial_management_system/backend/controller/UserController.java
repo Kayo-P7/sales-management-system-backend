@@ -19,7 +19,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "usuários", description = "gerenciamento de contas e usuários do sistema")
 @RestController
@@ -65,7 +72,7 @@ public class UserController {
             @Parameter(description = "parametros de paginacao (page, size, sort)")
             Pageable pageable
     ) {
-        Page<UserResponse> page = this.userService.listar(name, pageable);
+        Page<UserResponse> page = userService.listar(name, pageable);
         return ResponseEntity.ok(page);
     }
 
@@ -84,7 +91,7 @@ public class UserController {
             @Parameter(description = "identificador unico do usuario", example = "1")
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(this.userService.buscarPorId(id));
+        return ResponseEntity.ok(userService.buscarPorId(id));
     }
 
     // inativa o usuario no sistema sem excluir o registro fisico
@@ -106,7 +113,7 @@ public class UserController {
             @Parameter(description = "identificador do usuario a desativar", example = "1")
             @PathVariable Long id
     ) {
-        this.userService.desativar(id);
+        userService.desativar(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -129,7 +136,7 @@ public class UserController {
             @Parameter(description = "identificador do usuario a ativar", example = "1")
             @PathVariable Long id
     ) {
-        this.userService.ativar(id);
+        userService.ativar(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = "dados de entrada para criacao de marca de veiculo")
 public record BrandRequest(
         @Schema(description = "nome da marca", example = "Toyota")
-        @NotBlank String name,
-
-        @Schema(description = "indica se a marca esta ativa no catalogo", example = "true")
-        boolean isActive
+        @NotBlank String name
 ) {
 }
