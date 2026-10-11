@@ -2,6 +2,7 @@ package com.commercial_management_system.backend.config;
 
 import com.commercial_management_system.backend.controller.HealthController;
 import com.commercial_management_system.backend.service.RateLimitService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class RateLimitFilterTest {
         properties.setAuth(new RateLimitProperties.Policy(2, 2, 60));
         properties.setGeneral(new RateLimitProperties.Policy(5, 5, 60));
 
-        rateLimitService = new RateLimitService(properties);
+        rateLimitService = new RateLimitService(properties, new SimpleMeterRegistry());
         RateLimitFilter filter = new RateLimitFilter(rateLimitService);
 
         mockMvc = MockMvcBuilders
