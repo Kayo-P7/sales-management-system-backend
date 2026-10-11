@@ -26,6 +26,7 @@ public class SecurityConfigurations {
 
     private final SecurityFilter securityFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final CorrelationIdFilter correlationIdFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,6 +46,8 @@ public class SecurityConfigurations {
                         // exige autenticacao para qualquer outro endpoint
                         .anyRequest().authenticated()
                 )
+                // propaga o identificador de correlacao no mdc e na resposta antes dos demais filtros
+                .addFilterBefore(correlationIdFilter, CorsFilter.class)
                 // aplica limitacao de taxa logo apos cors e antes da autenticacao
                 .addFilterAfter(rateLimitFilter, CorsFilter.class)
                 // intercepta as requisicoes com o filtro de token jwt antes do filtro padrao
