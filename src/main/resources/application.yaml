@@ -46,3 +46,13 @@ api:
 logging:
   pattern:
     level: "%5p [correlationId=%X{correlationId:-}]"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, info
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: ADMIN

@@ -148,6 +148,34 @@ Caso uma migration falhe durante a inicialização:
   ./mvnw flyway:migrate -Dflyway.url=jdbc:postgresql://localhost:5439/sales_management -Dflyway.user=postgres -Dflyway.password=postgres
   ```
 
+## 🔍 Observabilidade e Rastreamento (Correlation ID & MDC)
+
+A API possui rastreamento distribuído de requisições implementado via `CorrelationIdFilter` e **SLF4J MDC (Mapped Diagnostic Context)**:
+
+- **Cabeçalho `X-Correlation-ID`**:
+  - Toda requisição HTTP recebe um identificador único no cabeçalho de resposta `X-Correlation-ID`.
+  - Caso o cliente envie seu próprio cabeçalho `X-Correlation-ID`, ele é preservado e propagado; se ausente, um novo UUID v4 é gerado automaticamente.
+- **Logs Estruturados**:
+  - O identificador de correlação é estampado automaticamente em todas as linhas de log geradas durante o ciclo de vida da requisição no formato `[correlationId=<uuid>]`.
+  - O contexto é limpo de forma estrita no término de cada chamada para evitar vazamentos no pool de threads do servidor web.
+
+---
+
+## 📊 Métricas Operacionais e Monitoramento (Spring Boot Actuator & Micrometer)
+
+A API disponibiliza endpoints de auditoria, integridade e telemetria operacional através do **Spring Boot Actuator** integrado ao **Micrometer**:
+
+- **Saúde da Aplicação (`GET /actuator/health`)**:
+  - Acesso público para probes de liveness e readiness de orquestradores (Docker/Kubernetes).
+  - Detalhes sensíveis de subsistemas (disco, banco de dados) só são exibidos quando autenticado com perfil `ROLE_ADMIN`.
+- **Métricas Operacionais (`GET /actuator/metrics`)**:
+  - Acesso restrito a administradores (`ROLE_ADMIN`). Requer autenticação via token Bearer JWT.
+  - **Pool de Conexões HikariCP**: métricas nativas do banco (`hikaricp.connections.active`, `hikaricp.connections.idle`, `hikaricp.connections.max`, etc.).
+  - **Controle de Taxa (Rate Limit)**:
+    - `rate_limit_requests_total`: contador de requisições segmentado por rota (`auth` / `general`) e resultado (`allowed` / `rejected`).
+    - `rate_limit_active_buckets`: gauge contínuo monitorando a quantidade de baldes de tokens ativos em memória.
+  - **Métricas JVM e Servidor**: memória heap/non-heap (`jvm.memory.used`), threads e latência de requisições HTTP (`http.server.requests`).
+
 ---
 
 ## 🧪 Testes Automatizados
@@ -162,7 +190,9 @@ Para executar os testes unitários e de integração com banco em memória (H2):
 
 ## 📖 Endpoints Úteis
 
-- **Verificação de Saúde (Health Check)**: `GET http://localhost:8089/health`
+- **Verificação de Saúde (Health Check Básico)**: `GET http://localhost:8089/health`
+- **Saúde da Aplicação (Spring Boot Actuator)**: `GET http://localhost:8089/actuator/health`
+- **Métricas Operacionais (Requer ADMIN)**: `GET http://localhost:8089/actuator/metrics`
 - **Documentação Swagger UI**: `http://localhost:8089/swagger-ui.html`
 - **Especificação OpenAPI**: `http://localhost:8089/v3/api-docs`
 - **Login**: `POST http://localhost:8089/api/v1/auth/login`

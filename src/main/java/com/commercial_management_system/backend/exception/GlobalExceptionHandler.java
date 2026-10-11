@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -26,6 +27,18 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    // trata rotas inexistentes ou recursos estaticos nao encontrados
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErroResponse> handleNoResourceFound(
+            NoResourceFoundException ex,
+            HttpServletRequest request) {
+        return build(
+                HttpStatus.NOT_FOUND,
+                "recurso nao encontrado: " + ex.getResourcePath(),
                 request.getRequestURI()
         );
     }

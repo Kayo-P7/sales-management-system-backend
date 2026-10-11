@@ -1,11 +1,11 @@
 package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.config.RateLimitProperties;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -13,11 +13,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@RequiredArgsConstructor
 public class RateLimitService {
 
     private final RateLimitProperties properties;
+    private final MeterRegistry meterRegistry;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+
+    public RateLimitService(RateLimitProperties properties, MeterRegistry meterRegistry) {
+        this.properties = properties;
+        this.meterRegistry = meterRegistry;
+        // registra medicao continua de buckets ativos em memoria
+        meterRegistry.gauge("rate_limit_active_buckets", buckets, Map::size);
+    }
 
     // verifica e consome um token do bucket correspondente ao cliente
     public ConsumptionProbe tryConsume(HttpServletRequest request) {
@@ -30,7 +37,14 @@ public class RateLimitService {
         RateLimitProperties.Policy policy = rotaAuth ? properties.getAuth() : properties.getGeneral();
 
         Bucket bucket = buckets.computeIfAbsent(chave, k -> criarBucket(policy));
-        return bucket.tryConsumeAndReturnRemaining(1);
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+        // registra metricas de requisicoes permitidas e rejeitadas
+        String routeTag = rotaAuth ? "auth" : "general";
+        String resultTag = probe.isConsumed() ? "allowed" : "rejected";
+        meterRegistry.counter("rate_limit_requests_total", "route", routeTag, "result", resultTag).increment();
+
+        return probe;
     }
 
     // indica se o rate limiting esta habilitado
