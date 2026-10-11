@@ -1,11 +1,14 @@
 package com.commercial_management_system.backend.controller;
 
 import com.commercial_management_system.backend.dto.AuthenticationRequest;
+import com.commercial_management_system.backend.dto.RefreshTokenRequest;
 import com.commercial_management_system.backend.dto.RegisterRequest;
 import com.commercial_management_system.backend.dto.TokenResponse;
 import com.commercial_management_system.backend.dto.erro.ErroResponse;
+import com.commercial_management_system.backend.model.RefreshToken;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.service.AuthService;
+import com.commercial_management_system.backend.service.RefreshTokenService;
 import com.commercial_management_system.backend.service.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,9 +37,10 @@ public class AuthenticationController {
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
     private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
 
-    // autentica credenciais e retorna token jwt
-    @Operation(summary = "realizar login", description = "autentica o usuario atraves de email e senha retornando o token jwt de acesso")
+    // autentica credenciais e retorna token jwt com refresh token
+    @Operation(summary = "realizar login", description = "autentica o usuario atraves de email e senha retornando o par de tokens")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "login realizado com sucesso",
                     content = @Content(schema = @Schema(implementation = TokenResponse.class))),
@@ -53,11 +57,42 @@ public class AuthenticationController {
 
         // valida credenciais atraves do authentication manager
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
+        User user = (User) authentication.getPrincipal();
 
-        // gera token jwt para o usuario autenticado
-        String jwt = tokenService.gerarToken((User) authentication.getPrincipal());
+        // gera token jwt de acesso e refresh token persistido
+        String jwt = tokenService.gerarToken(user);
+        RefreshToken refreshToken = refreshTokenService.criarRefreshToken(user);
 
-        return ResponseEntity.ok(new TokenResponse(jwt));
+        return ResponseEntity.ok(new TokenResponse(jwt, refreshToken.getToken()));
+    }
+
+    // renova token de acesso aplicando rotacao no refresh token
+    @Operation(summary = "renovar token", description = "gera novo par de access token e refresh token a partir de um refresh token valido")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "tokens renovados com sucesso",
+                    content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+            @ApiResponse(responseCode = "400", description = "dados de entrada invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "401", description = "refresh token invalido ou expirado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        TokenResponse response = refreshTokenService.renovarToken(request.refreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    // encerra a sessao invalidando o refresh token
+    @Operation(summary = "encerrar sessão (logout)", description = "revoga o refresh token informado para encerrar a sessao do usuario")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "sessao encerrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "dados de entrada invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.revogarRefreshToken(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 
     // registra um novo usuario no sistema
