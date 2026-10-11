@@ -196,6 +196,26 @@ Para executar os testes unitários e de integração com banco em memória (H2):
 - **Documentação Swagger UI**: `http://localhost:8089/swagger-ui.html`
 - **Especificação OpenAPI**: `http://localhost:8089/v3/api-docs`
 - **Login**: `POST http://localhost:8089/api/v1/auth/login`
+- **Atualização de Token (Refresh)**: `POST http://localhost:8089/api/v1/auth/refresh`
+- **Logout (Revogação de Refresh Token)**: `POST http://localhost:8089/api/v1/auth/logout`
 - **Registro de Usuário**: `POST http://localhost:8089/api/v1/auth/register`
 - **Gerenciamento de Usuários**: `http://localhost:8089/api/v1/users`
 - **Gerenciamento de Marcas**: `http://localhost:8089/api/v1/brands`
+
+---
+
+## 🔄 Mecanismo de Refresh Token e Rotação
+
+A autenticação implementa renovação de sessão e revogação por meio de **Refresh Tokens** persistidos e rotacionados:
+
+- **Login (`POST /api/v1/auth/login`)**:
+  - Retorna o token de acesso JWT (curta duração) e o `refreshToken` opaco de longa duração (expiração padrão: 7 dias).
+- **Rotação de Refresh Token (`POST /api/v1/auth/refresh`)**:
+  - Recebe `{ "refreshToken": "<token>" }`.
+  - Valida expiração, revogação prévia e integridade do token.
+  - Revoga o refresh token consumido imediatamente e emite um **novo par** (novo access token JWT + novo refresh token), prevenindo reaproveitamento indevido (replay attacks).
+- **Logout Seguro (`POST /api/v1/auth/logout`)**:
+  - Recebe `{ "refreshToken": "<token>" }` e marca o refresh token ativo como revogado (`revoked = true`), impedindo futuras renovações de sessão.
+- **Tratamento de Exceções**:
+  - Tokens expirados, revogados ou inexistentes retornam status **HTTP 401 Unauthorized** com payload padronizado (`ErroResponse`).
+
