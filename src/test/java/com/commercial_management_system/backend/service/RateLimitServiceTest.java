@@ -2,6 +2,7 @@ package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.config.RateLimitProperties;
 import io.github.bucket4j.ConsumptionProbe;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RateLimitServiceTest {
 
     private RateLimitService rateLimitService;
+    private SimpleMeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() {
@@ -19,7 +21,8 @@ class RateLimitServiceTest {
         // define capacidade de 2 para auth e 3 para rotas gerais para agilizar testes
         properties.setAuth(new RateLimitProperties.Policy(2, 2, 60));
         properties.setGeneral(new RateLimitProperties.Policy(3, 3, 60));
-        rateLimitService = new RateLimitService(properties);
+        meterRegistry = new SimpleMeterRegistry();
+        rateLimitService = new RateLimitService(properties, meterRegistry);
     }
 
     // valida consumo dentro da capacidade e rejeicao ao esgotar tokens para auth
@@ -78,5 +81,31 @@ class RateLimitServiceTest {
 
         String ip = rateLimitService.extrairIpCliente(request);
         assertEquals("203.0.113.195", ip);
+    }
+
+    // valida registro correto de metricas nos gauges e counters do micrometer
+    @Test
+    @DisplayName("deve registrar metricas de gauge e counters no meter registry")
+    void deveRegistrarMetricasAoConsumirRequisicoes() {
+        MockHttpServletRequest requestAuth = new MockHttpServletRequest();
+        requestAuth.setRequestURI("/api/v1/auth/login");
+        requestAuth.setRemoteAddr("10.10.10.1");
+
+        // consome requisicao permitida
+        rateLimitService.tryConsume(requestAuth);
+
+        // verifica metricas no registry
+        double allowedCount = meterRegistry.get("rate_limit_requests_total")
+                .tag("route", "auth")
+                .tag("result", "allowed")
+                .counter()
+                .count();
+        assertEquals(1.0, allowedCount);
+
+        // verifica gauge de buckets em memoria
+        double activeBuckets = meterRegistry.get("rate_limit_active_buckets")
+                .gauge()
+                .value();
+        assertEquals(1.0, activeBuckets);
     }
 }
