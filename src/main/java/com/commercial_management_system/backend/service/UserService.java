@@ -26,14 +26,14 @@ public class UserService {
     // cadastra novo usuario gerando hash seguro para a senha
     @Transactional
     public User salvar(UserRequest userRequest) {
-        if (this.userRepository.existsByEmail(userRequest.email())) {
+        if (userRepository.existsByEmail(userRequest.email())) {
             throw new UserAlreadyExistsException("email ja cadastrado no sistema");
         }
-        if (this.userRepository.existsByTelephone(userRequest.telephone())) {
+        if (userRepository.existsByTelephone(userRequest.telephone())) {
             throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
         }
 
-        String encodedPassword = this.passwordEncoder.encode(userRequest.password());
+        String encodedPassword = passwordEncoder.encode(userRequest.password());
         User user = new User(
                 userRequest.name(),
                 userRequest.email(),
@@ -43,7 +43,7 @@ public class UserService {
                 UserStatus.ACTIVE
         );
 
-        return this.userRepository.save(user);
+        return userRepository.save(user);
     }
 
     // busca usuario e converte para dto de resposta
@@ -56,7 +56,7 @@ public class UserService {
     // busca entidade usuario para uso interno
     @Transactional(readOnly = true)
     public User buscarEntidadePorId(Long id) {
-        return this.userRepository.findById(id)
+        return userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
     }
 
@@ -64,10 +64,10 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> listar(String name, Pageable pageable) {
         if (name != null && !name.isBlank()) {
-            return this.userRepository.findByNameContainingIgnoreCase(name.trim(), pageable)
+            return userRepository.findByNameContainingIgnoreCase(name.trim(), pageable)
                     .map(UserResponse::from);
         }
-        return this.userRepository.findAll(pageable)
+        return userRepository.findAll(pageable)
                 .map(UserResponse::from);
     }
 
@@ -81,7 +81,7 @@ public class UserService {
         }
 
         user.setUserStatus(UserStatus.INACTIVE);
-        this.userRepository.save(user);
+        userRepository.save(user);
     }
 
     // reativa usuario inativo no sistema
@@ -94,6 +94,6 @@ public class UserService {
         }
 
         user.setUserStatus(UserStatus.ACTIVE);
-        this.userRepository.save(user);
+        userRepository.save(user);
     }
 }

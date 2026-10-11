@@ -37,10 +37,10 @@ class RateLimitFilterTest {
         properties.setAuth(new RateLimitProperties.Policy(2, 2, 60));
         properties.setGeneral(new RateLimitProperties.Policy(5, 5, 60));
 
-        this.rateLimitService = new RateLimitService(properties);
+        rateLimitService = new RateLimitService(properties);
         RateLimitFilter filter = new RateLimitFilter(rateLimitService);
 
-        this.mockMvc = MockMvcBuilders
+        mockMvc = MockMvcBuilders
                 .standaloneSetup(new HealthController(), new FakeAuthController())
                 .addFilters(filter)
                 .build();

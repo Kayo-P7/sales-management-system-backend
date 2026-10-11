@@ -19,7 +19,7 @@ class RateLimitServiceTest {
         // define capacidade de 2 para auth e 3 para rotas gerais para agilizar testes
         properties.setAuth(new RateLimitProperties.Policy(2, 2, 60));
         properties.setGeneral(new RateLimitProperties.Policy(3, 3, 60));
-        this.rateLimitService = new RateLimitService(properties);
+        rateLimitService = new RateLimitService(properties);
     }
 
     // valida consumo dentro da capacidade e rejeicao ao esgotar tokens para auth

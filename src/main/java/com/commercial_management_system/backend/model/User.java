@@ -68,20 +68,20 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // mapeia role dinamicamente conforme o tipo do usuario
-        if (this.userType != null) {
-            return List.of(new SimpleGrantedAuthority(this.userType.name()));
+        if (userType != null) {
+            return List.of(new SimpleGrantedAuthority(userType.name()));
         }
         return List.of(new SimpleGrantedAuthority(UserType.ROLE_USER.name()));
     }
 
     @Override
     public @Nullable String getPassword() {
-        return this.password;
+        return password;
     }
 
     @Override
     public String getUsername() {
-        return this.email;
+        return email;
     }
 
     @Override
@@ -102,6 +102,6 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         // usuario ativo possui autenticacao habilitada
-        return this.userStatus == UserStatus.ACTIVE;
+        return userStatus == UserStatus.ACTIVE;
     }
 }

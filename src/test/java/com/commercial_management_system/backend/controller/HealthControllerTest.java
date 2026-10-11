@@ -16,7 +16,7 @@ class HealthControllerTest {
 
     @BeforeEach
     void setUp() {
-        this.mockMvc = MockMvcBuilders.standaloneSetup(new HealthController()).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new HealthController()).build();
     }
 
     // valida endpoint publico de health check retornando status 200

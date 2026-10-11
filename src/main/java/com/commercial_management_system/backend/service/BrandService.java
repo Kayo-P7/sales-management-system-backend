@@ -29,7 +29,7 @@ public class BrandService {
     // lista todas as marcas cadastradas
     @Transactional(readOnly = true)
     public List<BrandResponse> listarTodos() {
-        return this.brandRepository.findAll().stream()
+        return brandRepository.findAll().stream()
                 .map(BrandResponse::from)
                 .toList();
     }

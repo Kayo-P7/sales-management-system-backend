@@ -19,14 +19,14 @@ public class AuthService {
     // registra novo usuario com senha criptografada e checagem de unicidade
     @Transactional
     public void register(RegisterRequest request) {
-        if (this.userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmail(request.email())) {
             throw new UserAlreadyExistsException("email ja cadastrado no sistema");
         }
-        if (this.userRepository.existsByTelephone(request.telephone())) {
+        if (userRepository.existsByTelephone(request.telephone())) {
             throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
         }
 
-        String senhaCriptografada = this.passwordEncoder.encode(request.password());
+        String senhaCriptografada = passwordEncoder.encode(request.password());
         User newUser = new User(
                 request.name(),
                 request.email(),
@@ -35,6 +35,6 @@ public class AuthService {
                 request.userType(),
                 request.userStatus()
         );
-        this.userRepository.save(newUser);
+        userRepository.save(newUser);
     }
 }

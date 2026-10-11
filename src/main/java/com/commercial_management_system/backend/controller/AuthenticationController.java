@@ -52,10 +52,10 @@ public class AuthenticationController {
                 authRequest.email(), authRequest.password());
 
         // valida credenciais atraves do authentication manager
-        Authentication authentication = this.authenticationManager.authenticate(authenticationToken);
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
         // gera token jwt para o usuario autenticado
-        String jwt = this.tokenService.gerarToken((User) authentication.getPrincipal());
+        String jwt = tokenService.gerarToken((User) authentication.getPrincipal());
 
         return ResponseEntity.ok(new TokenResponse(jwt));
     }
@@ -71,7 +71,7 @@ public class AuthenticationController {
     })
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-        this.authService.register(request);
+        authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

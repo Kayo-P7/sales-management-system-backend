@@ -29,7 +29,7 @@ public class RateLimitService {
         String chave = (rotaAuth ? "auth:" : "general:") + clientIp;
         RateLimitProperties.Policy policy = rotaAuth ? properties.getAuth() : properties.getGeneral();
 
-        Bucket bucket = this.buckets.computeIfAbsent(chave, k -> criarBucket(policy));
+        Bucket bucket = buckets.computeIfAbsent(chave, k -> criarBucket(policy));
         return bucket.tryConsumeAndReturnRemaining(1);
     }
 
@@ -62,6 +62,6 @@ public class RateLimitService {
 
     // limpa o mapa de buckets em memoria para fins de teste
     public void limparBuckets() {
-        this.buckets.clear();
+        buckets.clear();
     }
 }

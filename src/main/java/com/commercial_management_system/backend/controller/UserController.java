@@ -54,7 +54,7 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> cadastrar(@Valid @RequestBody UserRequest userRequest) {
-        UserResponse response = UserResponse.from(this.userService.salvar(userRequest));
+        UserResponse response = UserResponse.from(userService.salvar(userRequest));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
