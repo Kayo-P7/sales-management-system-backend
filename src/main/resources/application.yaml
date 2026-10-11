@@ -42,3 +42,7 @@ api:
       capacity: ${RATE_LIMIT_GENERAL_CAPACITY:60}
       refill-tokens: ${RATE_LIMIT_GENERAL_REFILL_TOKENS:60}
       refill-duration-in-seconds: ${RATE_LIMIT_GENERAL_DURATION:60}
+
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId:-}]"
