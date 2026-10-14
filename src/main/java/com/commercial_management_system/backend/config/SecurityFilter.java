@@ -26,6 +26,10 @@ public class SecurityFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+        System.out.println("URI: " + request.getRequestURI());
+        System.out.println("Authorization presente: "
+                + (request.getHeader("Authorization") != null));
         // extrai o token jwt do cabecalho authorization
         String tokenJWT = recuperarToken(request);
 

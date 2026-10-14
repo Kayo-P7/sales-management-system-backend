@@ -19,8 +19,8 @@ public class BrandService {
     // cadastra uma nova marca de veiculo
     @Transactional
     public BrandResponse salvar(BrandRequest request) {
-        Brand brand = new Brand(
-                request.name());
+        Brand brand = new Brand();
+        brand.setName(request.name());
 
         brandRepository.save(brand);
         return BrandResponse.from(brand);

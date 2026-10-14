@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.CorsFilter;
 
 @Configuration
@@ -31,7 +32,13 @@ public class SecurityConfigurations {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        // Identifica especificamente a requisicao de cadastro de usuario.
+        RequestMatcher cadastroPublico = request ->
+                HttpMethod.POST.matches(request.getMethod())
+                        && "/api/v1/users".equals(request.getServletPath());
         return http
+
                 // desabilita csrf pois a autenticacao e baseada em token stateless
                 .csrf(AbstractHttpConfigurer::disable)
                 // habilita cors integrado as rotas da api
@@ -41,9 +48,11 @@ public class SecurityConfigurations {
                 // define regras de autorizacao por rota
                 .authorizeHttpRequests(req -> req
                         // libera login e rotas publicas
+                        .requestMatchers(cadastroPublico).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicle/**", "/api/v1/vehicle").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // restringe endpoints operacionais e metricas do actuator para administradores
                         .requestMatchers("/actuator/**").hasRole("ADMIN")

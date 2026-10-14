@@ -188,6 +188,76 @@ Para executar os testes unitários e de integração com banco em memória (H2):
 
 ---
 
+
+
+## 🚗 Gerenciamento de Veículos
+
+A API também disponibiliza operações para cadastrar, consultar, filtrar, atualizar e excluir veículos. Cada veículo possui nome, cor, tipo, preço e referência a uma marca cadastrada. O cadastro recebe o identificador da marca (`brandId`), e a resposta retorna o identificador associado.
+
+### Campos do veículo
+
+| Campo | Descrição |
+|---|---|
+| `name` | Nome do veículo |
+| `color` | Cor, representada pelo enum `VehicleColor` |
+| `vehicleType` | Tipo do veículo, representado pelo enum `VehicleType` |
+| `price` | Preço (`BigDecimal`) |
+| `brandId` | ID de uma marca já cadastrada |
+
+Os valores aceitos para `color` e `vehicleType` devem corresponder aos nomes definidos nos enums do projeto.
+
+### Endpoints de veículos
+
+Todos os endpoints abaixo usam o prefixo `/api/v1/vehicle`. As operações de escrita exigem perfil `ADMIN`; consultas exigem autenticação com perfil `ADMIN` ou `USER`.
+
+| Método | Rota | Descrição | Permissão |
+|---|---|---|---|
+| `POST` | `/api/v1/vehicle` | Cadastra um veículo | `ADMIN` |
+| `GET` | `/api/v1/vehicle/{id}` | Busca veículo pelo ID | `ADMIN`, `USER` |
+| `GET` | `/api/v1/vehicle` | Lista e filtra veículos com paginação | `ADMIN`, `USER` |
+| `PUT` | `/api/v1/vehicle/{id}` | Atualiza os dados do veículo | `ADMIN` |
+| `PATCH` | `/api/v1/vehicle/{id}` | Atualiza a marca associada ao veículo | `ADMIN` |
+| `DELETE` | `/api/v1/vehicle/{id}` | Exclui veículo pelo ID | `ADMIN` |
+| `DELETE` | `/api/v1/vehicle/{name}` | Exclui veículo pelo nome | `ADMIN` |
+
+### Filtros e paginação
+
+A listagem aceita os seguintes parâmetros opcionais:
+
+- `name`: busca por parte do nome do veículo.
+- `color`: busca por parte do nome da cor.
+- `price`: filtra pelo preço exato.
+- `nameBrand`: busca por parte do nome da marca relacionada.
+- `page`, `size` e `sort`: parâmetros de paginação e ordenação do Spring Data.
+
+Exemplo de consulta:
+
+```http
+GET /api/v1/vehicle?name=corolla&color=black&nameBrand=toyota&page=0&size=10
+```
+
+O endpoint de listagem retorna uma página (`Page`) de veículos, e não necessariamente todos os registros em uma única resposta.
+
+### Exemplo de cadastro
+
+```http
+POST /api/v1/vehicle
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+```json
+{
+  "name": "Corolla",
+  "color": "BLACK",
+  "vehicleType": "SEDAN",
+  "price": 120000.00,
+  "brandId": 1
+}
+```
+
+> Use valores de `color` e `vehicleType` que realmente existam nos enums do projeto e um `brandId` válido. O exemplo é ilustrativo.
+
 ## 📖 Endpoints Úteis
 
 - **Verificação de Saúde (Health Check Básico)**: `GET http://localhost:8089/health`
