@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @Table(name = "brands")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Brand {
 
     @Id
@@ -32,7 +34,4 @@ public class Brand {
     private List<Vehicle> vehicles = new ArrayList<>();
 
 
-    public Brand(String name) {
-        this.name = name;
-    }
 }

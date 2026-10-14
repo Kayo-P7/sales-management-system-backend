@@ -1,6 +1,7 @@
 package com.commercial_management_system.backend.model;
 
 
+import com.commercial_management_system.backend.enums.VehicleColor;
 import com.commercial_management_system.backend.enums.VehicleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,7 @@ import jakarta.persistence.Version;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.awt.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -32,9 +34,10 @@ public class Vehicle {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "color", nullable = false)
-    private String color;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "color", nullable = false)
+    private VehicleColor color;
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type", nullable = false)
     private VehicleType vehicleType;
@@ -49,11 +52,13 @@ public class Vehicle {
     @Version
     private Long version;
 
-    public Vehicle(String name, String color, VehicleType vehicleType, BigDecimal price, Brand brand) {
+    public Vehicle(Long id, String name, VehicleColor color, VehicleType vehicleType, BigDecimal price, Brand brand, Long version) {
+        this.id = id;
         this.name = name;
         this.color = color;
         this.vehicleType = vehicleType;
         this.price = price;
         this.brand = brand;
+        this.version = version;
     }
 }
