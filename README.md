@@ -1,242 +1,334 @@
 # Sales Management System Backend
 
-API RESTful para gestão de vendas, usuários, marcas e veículos desenvolvida com Spring Boot, Spring Security (JWT), Spring Data JPA e PostgreSQL.
+API RESTful para gerenciamento de vendas, desenvolvida com Java 17, Spring Boot, Spring Security, JWT, Spring Data JPA, PostgreSQL e Flyway.
+
+A aplicação oferece autenticação e autorização de usuários, gerenciamento de equipes, clientes, veículos e marcas, auditoria de registros e monitoramento operacional.
+
+## Sumário
+
+- [Tecnologias](#tecnologias)
+- [Funcionalidades](#funcionalidades)
+- [Pré-requisitos](#pré-requisitos)
+- [Configuração do ambiente](#configuração-do-ambiente)
+- [Como executar](#como-executar)
+- [Documentação Swagger / OpenAPI](#documentação-swagger--openapi)
+- [Autenticação e autorização](#autenticação-e-autorização)
+- [Gerenciamento de usuários e equipes](#gerenciamento-de-usuários-e-equipes)
+- [Gerenciamento de clientes](#gerenciamento-de-clientes)
+- [Gerenciamento de veículos e marcas](#gerenciamento-de-veículos-e-marcas)
+- [Versionamento do banco de dados](#versionamento-do-banco-de-dados)
+- [Auditoria](#auditoria)
+- [Segurança e limitação de requisições](#segurança-e-limitação-de-requisições)
+- [Observabilidade e monitoramento](#observabilidade-e-monitoramento)
+- [Refresh Tokens](#refresh-tokens)
+- [Testes](#testes)
+- [Endpoints úteis](#endpoints-úteis)
 
 ---
 
-## 🛠️ Pré-requisitos
+## Tecnologias
 
-- **Java JDK 17** ou superior (recomendado JDK 21)
-- **Docker** e **Docker Compose**
-- **Maven** (opcional, wrapper `./mvnw` incluso no projeto)
+| Tecnologia | Finalidade |
+|---|---|
+| Java 17 | Linguagem de programação |
+| Spring Boot | Framework principal da aplicação |
+| Spring Security | Autenticação e autorização |
+| JWT | Autenticação por token |
+| Spring Data JPA | Persistência e acesso aos dados |
+| Hibernate | Mapeamento objeto-relacional |
+| PostgreSQL | Banco de dados relacional |
+| Flyway | Versionamento do esquema do banco |
+| MapStruct | Mapeamento entre DTOs e entidades |
+| Springdoc OpenAPI | Documentação da API |
+| Bucket4j | Limitação de requisições |
+| Spring Boot Actuator | Verificação de saúde e métricas |
+| Micrometer | Coleta de métricas |
+| SLF4J MDC | Rastreamento de requisições nos logs |
+| Maven | Gerenciamento de dependências e build |
+| Docker Compose | Execução dos serviços em containers |
+
+## Funcionalidades
+
+### Autenticação e usuários
+
+- Cadastro e autenticação de usuários.
+- Autenticação por JWT.
+- Controle de acesso baseado em papéis.
+- Renovação de sessão por refresh tokens.
+- Rotação e revogação de refresh tokens.
+- Controle do estado dos usuários.
+- Armazenamento de senhas utilizando o mecanismo de codificação configurado na aplicação.
+
+### Gerenciamento de equipes
+
+- Criação de equipes por supervisores autenticados.
+- Associação de vendedores às equipes.
+- Validação do papel do usuário antes de associá-lo como vendedor.
+- Verificação de que o vendedor não pertence a outra equipe.
+- Prevenção da criação de múltiplas equipes pelo mesmo supervisor.
+- Consulta de equipe a partir do ID de um vendedor.
+- Consulta da equipe do supervisor autenticado.
+- Remoção de vendedores de uma equipe sem excluir suas contas.
+- Relacionamento entre usuários, supervisores, equipes e vendedores.
+
+### Gerenciamento de clientes
+
+- Cadastro e atualização de clientes.
+- Consulta e pesquisa de clientes.
+- Paginação nas operações de listagem que oferecem esse recurso.
+- Atualização parcial de dados por meio de PATCH.
+- Registro automático de datas de criação e modificação.
+- Auditoria dos usuários responsáveis pela criação e atualização dos registros.
+- Operações protegidas por autenticação.
+
+As regras de negócio preveem que vendedores gerenciem seus próprios clientes, supervisores acessem os clientes dentro de suas equipes e administradores tenham acesso administrativo mais amplo.
+
+Essas permissões devem ser aplicadas pelo backend, por meio das regras de negócio e das consultas ao banco, e não somente pela interface do frontend.
+
+### Gerenciamento de veículos e marcas
+
+- Cadastro, consulta e listagem de veículos.
+- Pesquisa e filtragem de veículos.
+- Atualização completa ou parcial.
+- Exclusão de veículos por ID ou nome, conforme as rotas configuradas.
+- Associação entre veículos e marcas cadastradas.
+- Representação de cor e tipo por enums.
+- Utilização de `BigDecimal` para valores monetários.
+
+### Recursos operacionais
+
+- Versionamento do esquema do banco com Flyway.
+- Identificação e rastreamento de requisições por Correlation ID.
+- Limitação de requisições para reduzir abusos da API.
+- Verificação de saúde da aplicação.
+- Métricas operacionais por meio do Actuator e Micrometer.
+- Documentação interativa com Swagger UI.
 
 ---
 
-## ⚙️ Configuração de Ambiente
+## Pré-requisitos
 
-Antes de iniciar, crie o arquivo de variáveis de ambiente a partir do modelo de exemplo:
+- Java JDK 17 ou superior.
+- Docker e Docker Compose para executar o ambiente em containers.
+- Maven, caso não utilize o Maven Wrapper incluído no projeto.
+- PostgreSQL, caso opte por executar o banco fora do Docker.
+
+## Configuração do ambiente
+
+Crie o arquivo de variáveis de ambiente a partir do modelo:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` para ajustar portas, credenciais do banco ou segredo JWT, caso necessário.
+Edite o arquivo `.env` para configurar as credenciais do banco, as portas e o segredo JWT, de acordo com as variáveis utilizadas pela aplicação.
 
----
+**Não envie credenciais reais, senhas ou segredos JWT para o repositório.** O arquivo `.env` deve permanecer fora do controle de versão quando contiver informações sensíveis.
 
-## 🚀 Como Executar
+Confira se as variáveis utilizadas pelo Docker Compose correspondem às configurações do Spring Boot.
 
-### 1. Execução com Docker (Aplicação + Banco)
+## Como executar
 
-Sobe toda a infraestrutura em containers conectados por rede interna:
+### 1. Execução com Docker Compose
+
+Construa as imagens e inicie os serviços:
 
 ```bash
-# constroi as imagens e inicia os containers em segundo plano
 docker compose up -d --build
+```
 
-# visualiza os logs da aplicacao
+Acompanhe os logs do backend:
+
+```bash
 docker compose logs -f backend
+```
 
-# encerra os containers
+Encerre os serviços:
+
+```bash
 docker compose down
 ```
 
-A API estará acessível em `http://localhost:8089`.
+A API estará disponível na porta configurada no Docker Compose e no arquivo de ambiente.
 
----
+### 2. Execução local
 
-### 2. Execução sem Docker (Desenvolvimento Local)
-
-Para rodar o backend localmente na sua máquina:
-
-1. **Inicie o banco de dados PostgreSQL via Docker Compose**:
-   ```bash
-   docker compose up -d database
-   ```
-   *(Caso já possua um PostgreSQL instalado localmente, garanta que ele esteja rodando na porta informada no `.env`)*
-
-2. **Inicie a aplicação utilizando o Maven Wrapper**:
-   ```bash
-   ./mvnw spring-boot:run
-   ```
-
-A API estará acessível em `http://localhost:8089`.
-
----
-
-## 📚 Documentação Interativa (Swagger / OpenAPI)
-
-A API possui documentação interativa completa gerada via Springdoc OpenAPI:
-
-- **Swagger UI**: [http://localhost:8089/swagger-ui.html](http://localhost:8089/swagger-ui.html)
-- **Especificação OpenAPI JSON**: [http://localhost:8089/v3/api-docs](http://localhost:8089/v3/api-docs)
-
-### Autenticação no Swagger UI:
-1. Execute o endpoint `POST /api/v1/auth/login` informando suas credenciais.
-2. Copie o token retornado no campo `token`.
-3. No topo da página do Swagger UI, clique no botão **Authorize** (com ícone de cadeado).
-4. No campo de valor, insira o token obtido e clique em **Authorize**.
-5. As requisições subsequentes aos endpoints protegidos (`/api/v1/users`, `/api/v1/brands`, etc.) enviarão o cabeçalho `Authorization: Bearer <token>` automaticamente.
-
----
-
-## 🛡️ Controle de Taxa (Rate Limiting)
-
-A API conta com proteção contra abuso e requisições excessivas implementada via algoritmo **Token Bucket** (Bucket4j):
-
-- **Rotas de Autenticação (`/api/v1/auth/**`)**: limite restrito para prevenção de força bruta (padrão: 10 requisições por minuto por IP).
-- **Rotas Gerais (`/api/v1/**`)**: limite de uso da API (padrão: 60 requisições por minuto por IP).
-- **Exclusões**: endpoints de documentação (`/swagger-ui/**`, `/v3/api-docs/**`) e integridade (`/health`) não sofrem restrição de taxa.
-
-### Cabeçalhos de Resposta:
-- `X-Rate-Limit-Remaining`: tokens restantes na janela atual.
-- `Retry-After`: tempo em segundos até a recarga de tokens caso o limite seja atingido.
-- `X-Rate-Limit-Retry-After-Seconds`: tempo de espera em segundos.
-
-Caso a cota seja ultrapassada, o servidor responde com status **HTTP 429 Too Many Requests** e corpo de erro padronizado (`ErroResponse`).
-
----
-
-## 🗄️ Versionamento de Banco de Dados com Flyway
-
-O projeto utiliza o **Flyway** para gerenciamento profissional, rastreável e automatizado das evoluções do esquema do banco de dados PostgreSQL.
-
-### 1. Localização e Convenção de Nomenclatura
-As migrations residem em:
-```
-src/main/resources/db/migration/
-```
-
-Seguem o padrão canônico do Flyway:
-- `V<VERSAO>__<descricao_em_snake_case>.sql`
-- Exemplo: `V1__create_initial_schema.sql`, `V2__add_new_column_to_users.sql`
-
-> **Regras Fundamentais**:
-> - Migrations versionadas com prefixo `V` são imutáveis após aplicadas em ambientes compartilhados.
-> - O separador entre a versão e a descrição é composto por **dois sublinhados** (`__`).
-> - A descrição deve ser concisa e refletir a responsabilidade da alteração.
-
-### 2. Como Criar uma Nova Migration
-1. Crie o arquivo `V<PROXIMA_VERSAO>__<nome_da_alteracao>.sql` no diretório `src/main/resources/db/migration/`.
-2. Escreva o SQL declarativo compatível com PostgreSQL (tabelas, índices, constraints).
-3. Atualize ou crie as entidades JPA correspondentes, garantindo alinhamento com a validação do Hibernate (`ddl-auto: validate`).
-4. Execute os testes automatizados para validar a consistência da aplicação.
-
-### 3. Adoção em Bancos de Dados Existentes (Baseline)
-Para bases que já contêm tabelas prévias, o Flyway está parametrizado com suporte a baseline seguro:
-- `FLYWAY_BASELINE_ON_MIGRATE=true`: se o banco não estiver vazio e não possuir o histórico, cria `flyway_schema_history` e marca a versão 1 como linha de base sem recriar tabelas existentes.
-- Em bancos novos (instalações limpas), o Flyway executa todas as migrations a partir da `V1`.
-
-### 4. Resolução de Falhas em Migrations
-Caso uma migration falhe durante a inicialização:
-1. Analise o log de erro para identificar o comando SQL causador do problema.
-2. Em ambiente de desenvolvimento, reverta o estado do banco afetado para um ponto consistente.
-3. Corrija o script SQL ou execute a intervenção manual necessária.
-4. Execute o comando de reparo do histórico se uma falha tiver sido registrada:
-   ```bash
-   ./mvnw flyway:repair
-   ```
-5. Suba a aplicação novamente para reprocessar a migration corrigida.
-
-### 5. Comandos Úteis do Maven Flyway
-- **Verificar status das migrations**:
-  ```bash
-  ./mvnw flyway:info -Dflyway.url=jdbc:postgresql://localhost:5439/sales_management -Dflyway.user=postgres -Dflyway.password=postgres
-  ```
-- **Executar migrações manualmente**:
-  ```bash
-  ./mvnw flyway:migrate -Dflyway.url=jdbc:postgresql://localhost:5439/sales_management -Dflyway.user=postgres -Dflyway.password=postgres
-  ```
-
-## 🔍 Observabilidade e Rastreamento (Correlation ID & MDC)
-
-A API possui rastreamento distribuído de requisições implementado via `CorrelationIdFilter` e **SLF4J MDC (Mapped Diagnostic Context)**:
-
-- **Cabeçalho `X-Correlation-ID`**:
-  - Toda requisição HTTP recebe um identificador único no cabeçalho de resposta `X-Correlation-ID`.
-  - Caso o cliente envie seu próprio cabeçalho `X-Correlation-ID`, ele é preservado e propagado; se ausente, um novo UUID v4 é gerado automaticamente.
-- **Logs Estruturados**:
-  - O identificador de correlação é estampado automaticamente em todas as linhas de log geradas durante o ciclo de vida da requisição no formato `[correlationId=<uuid>]`.
-  - O contexto é limpo de forma estrita no término de cada chamada para evitar vazamentos no pool de threads do servidor web.
-
----
-
-## 📊 Métricas Operacionais e Monitoramento (Spring Boot Actuator & Micrometer)
-
-A API disponibiliza endpoints de auditoria, integridade e telemetria operacional através do **Spring Boot Actuator** integrado ao **Micrometer**:
-
-- **Saúde da Aplicação (`GET /actuator/health`)**:
-  - Acesso público para probes de liveness e readiness de orquestradores (Docker/Kubernetes).
-  - Detalhes sensíveis de subsistemas (disco, banco de dados) só são exibidos quando autenticado com perfil `ROLE_ADMIN`.
-- **Métricas Operacionais (`GET /actuator/metrics`)**:
-  - Acesso restrito a administradores (`ROLE_ADMIN`). Requer autenticação via token Bearer JWT.
-  - **Pool de Conexões HikariCP**: métricas nativas do banco (`hikaricp.connections.active`, `hikaricp.connections.idle`, `hikaricp.connections.max`, etc.).
-  - **Controle de Taxa (Rate Limit)**:
-    - `rate_limit_requests_total`: contador de requisições segmentado por rota (`auth` / `general`) e resultado (`allowed` / `rejected`).
-    - `rate_limit_active_buckets`: gauge contínuo monitorando a quantidade de baldes de tokens ativos em memória.
-  - **Métricas JVM e Servidor**: memória heap/non-heap (`jvm.memory.used`), threads e latência de requisições HTTP (`http.server.requests`).
-
----
-
-## 🧪 Testes Automatizados
-
-Para executar os testes unitários e de integração com banco em memória (H2):
+Inicie o PostgreSQL:
 
 ```bash
-./mvnw clean test
+docker compose up -d database
 ```
+
+Execute a aplicação com o Maven Wrapper:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Para iniciar a aplicação sem executar os testes primeiro:
+
+```bash
+./mvnw spring-boot:run -DskipTests
+```
+
+Esse comando ignora a execução dos testes, mas ainda realiza a compilação do código.
+
+Verifique a porta configurada na aplicação antes de acessar a API.
 
 ---
 
+## Documentação Swagger / OpenAPI
 
+A API utiliza Springdoc OpenAPI para gerar a documentação interativa dos endpoints.
 
-## 🚗 Gerenciamento de Veículos
+Em uma execução local na porta `8080`, os endereços são:
 
-A API também disponibiliza operações para cadastrar, consultar, filtrar, atualizar e excluir veículos. Cada veículo possui nome, cor, tipo, preço e referência a uma marca cadastrada. O cadastro recebe o identificador da marca (`brandId`), e a resposta retorna o identificador associado.
+- **Swagger UI:** http://localhost:8080/swagger-ui/index.html
+- **Especificação OpenAPI em JSON:** http://localhost:8080/v3/api-docs
+
+Caso a aplicação utilize outra porta, substitua `8080` pela porta configurada.
+
+### Como autenticar no Swagger
+
+1. Execute `POST /api/v1/auth/login` com as credenciais de um usuário cadastrado.
+2. Copie o token de acesso retornado.
+3. Clique em **Authorize** no topo do Swagger UI.
+4. Informe o token conforme o esquema de autenticação configurado.
+5. Execute os endpoints protegidos.
+
+Quando a autenticação estiver configurada como HTTP Bearer, normalmente basta informar o token, sem acrescentar manualmente o prefixo `Bearer`.
+
+---
+
+## Autenticação e autorização
+
+A aplicação utiliza Spring Security e JWT para autenticar as requisições.
+
+As chamadas protegidas devem incluir o token no cabeçalho HTTP:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+O filtro de autenticação valida o token, identifica o usuário e estabelece o contexto de segurança utilizado durante a requisição.
+
+### Papéis de acesso
+
+| Papel | Responsabilidade |
+|---|---|
+| `ROLE_ADMIN` | Operações administrativas e gerenciamento geral do sistema |
+| `ROLE_SUPERVISOR` | Gerenciamento de equipes e acesso aos dados autorizados da equipe |
+| `ROLE_VENDEDOR` | Operações de vendas e acesso aos clientes autorizados |
+
+As permissões de acesso aos endpoints podem ser controladas por anotações como `@PreAuthorize`.
+
+A autorização no controller não substitui a validação de acesso aos registros. O serviço e o repositório também precisam garantir, por exemplo, que um supervisor não altere dados de vendedores de outra equipe.
+
+---
+
+## Gerenciamento de usuários e equipes
+
+### Modelo de dados
+
+O gerenciamento de equipes utiliza três conceitos principais:
+
+- **Usuário (`User`):** representa um administrador, supervisor ou vendedor.
+- **Equipe (`Equipe`):** armazena o nome da equipe e seu supervisor.
+- **Vínculo do vendedor:** associa o vendedor a uma equipe.
+
+Cada equipe possui um supervisor, e cada supervisor pode gerenciar apenas uma equipe. Um vendedor pode pertencer a, no máximo, uma equipe, enquanto uma equipe pode conter vários vendedores.
+
+Os usuários mantêm IDs numéricos globais e únicos no banco de dados. Identificadores visuais, como `Vendedor 001`, devem ser tratados separadamente da chave primária.
+
+### Endpoints de equipes
+
+Prefixo: `/api/v1/equipe`
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `POST` | `/api/v1/equipe` | Cadastra uma equipe e associa vendedores |
+| `GET` | `/api/v1/equipe` | Consulta a equipe do supervisor autenticado |
+| `GET` | `/api/v1/equipe/vendedores/{id}` | Consulta a equipe a partir do ID de um vendedor |
+| `DELETE` | `/api/v1/equipe/vendedores/{id}` | Remove um vendedor da equipe |
+
+A autorização efetiva e os códigos de resposta devem corresponder à implementação atual do controller e do serviço. Consulte o Swagger para verificar os detalhes de cada operação.
+
+### Exemplo de cadastro de equipe
+
+Requisição para `POST /api/v1/equipe`:
+
+```json
+{
+  "nome": "Equipe Norte",
+  "vendedores": [3, 4]
+}
+```
+
+Os IDs devem corresponder a usuários existentes com o papel `ROLE_VENDEDOR` que ainda não estejam associados a outra equipe.
+
+O serviço busca os usuários no banco, valida seus papéis e vínculos e realiza as associações. A resposta contém os dados da equipe no formato `EquipeResponse`.
+
+O cadastro utiliza uma transação para permitir que as alterações sejam revertidas caso uma exceção provoque rollback.
+
+### Remoção de vendedor
+
+Exemplo de requisição:
+
+```http
+DELETE /api/v1/equipe/vendedores/3
+```
+
+A operação remove a associação do vendedor com a equipe, mas não exclui a conta do usuário.
+
+Antes de realizar a alteração, o serviço deve verificar se o vendedor pertence à equipe do supervisor autenticado.
+
+---
+
+## Gerenciamento de clientes
+
+As operações de clientes são organizadas por meio de controller, service, repository, DTOs de requisição e resposta e mapper com MapStruct.
+
+### DTOs e mapeamento
+
+O DTO de requisição de cliente contempla campos como:
+
+- `name`
+- `telephone`
+- `email`
+- `notes`
+
+O mapper separa os dados expostos pela API da entidade persistida. No cadastro e nas atualizações, os campos de ID e auditoria são ignorados no mapeamento normal, evitando que o cliente da API controle diretamente esses valores.
+
+O mapeamento de PATCH atualiza os campos explicitamente configurados, preservando valores que não foram informados.
+
+### Pesquisa e paginação
+
+O repositório de clientes inclui consultas baseadas no criador, nome e telefone, como:
+
+- Busca por ID do cliente e ID do criador.
+- Pesquisa por parte do telefone, considerando o criador.
+- Listagem paginada de clientes por criador.
+- Pesquisa por nome ignorando diferenças entre letras maiúsculas e minúsculas.
+
+Essas consultas fazem parte da implementação de acesso aos clientes. A regra final deve distinguir o usuário que criou um cliente do vendedor responsável pelo atendimento quando esses papéis forem diferentes.
+
+Consulte o Swagger UI para conferir os caminhos exatos, parâmetros e formatos de resposta dos endpoints de clientes.
+
+---
+
+## Gerenciamento de veículos e marcas
+
+A API disponibiliza operações para gerenciamento de veículos e marcas.
 
 ### Campos do veículo
 
 | Campo | Descrição |
 |---|---|
 | `name` | Nome do veículo |
-| `color` | Cor, representada pelo enum `VehicleColor` |
-| `vehicleType` | Tipo do veículo, representado pelo enum `VehicleType` |
-| `price` | Preço (`BigDecimal`) |
+| `color` | Cor representada pelo enum `VehicleColor` |
+| `vehicleType` | Tipo representado pelo enum `VehicleType` |
+| `price` | Preço representado por `BigDecimal` |
 | `brandId` | ID de uma marca já cadastrada |
-
-Os valores aceitos para `color` e `vehicleType` devem corresponder aos nomes definidos nos enums do projeto.
-
-### Endpoints de veículos
-
-Todos os endpoints abaixo usam o prefixo `/api/v1/vehicle`. As operações de escrita exigem perfil `ADMIN`; consultas exigem autenticação com perfil `ADMIN` ou `USER`.
-
-| Método | Rota | Descrição | Permissão |
-|---|---|---|---|
-| `POST` | `/api/v1/vehicle` | Cadastra um veículo | `ADMIN` |
-| `GET` | `/api/v1/vehicle/{id}` | Busca veículo pelo ID | `ADMIN`, `USER` |
-| `GET` | `/api/v1/vehicle` | Lista e filtra veículos com paginação | `ADMIN`, `USER` |
-| `PUT` | `/api/v1/vehicle/{id}` | Atualiza os dados do veículo | `ADMIN` |
-| `PATCH` | `/api/v1/vehicle/{id}` | Atualiza a marca associada ao veículo | `ADMIN` |
-| `DELETE` | `/api/v1/vehicle/{id}` | Exclui veículo pelo ID | `ADMIN` |
-| `DELETE` | `/api/v1/vehicle/{name}` | Exclui veículo pelo nome | `ADMIN` |
-
-### Filtros e paginação
-
-A listagem aceita os seguintes parâmetros opcionais:
-
-- `name`: busca por parte do nome do veículo.
-- `color`: busca por parte do nome da cor.
-- `price`: filtra pelo preço exato.
-- `nameBrand`: busca por parte do nome da marca relacionada.
-- `page`, `size` e `sort`: parâmetros de paginação e ordenação do Spring Data.
-
-Exemplo de consulta:
-
-```http
-GET /api/v1/vehicle?name=corolla&color=black&nameBrand=toyota&page=0&size=10
-```
-
-O endpoint de listagem retorna uma página (`Page`) de veículos, e não necessariamente todos os registros em uma única resposta.
 
 ### Exemplo de cadastro
 
@@ -256,36 +348,267 @@ Authorization: Bearer <access_token>
 }
 ```
 
-> Use valores de `color` e `vehicleType` que realmente existam nos enums do projeto e um `brandId` válido. O exemplo é ilustrativo.
+Utilize valores existentes nos enums e um `brandId` válido.
 
-## 📖 Endpoints Úteis
-
-- **Verificação de Saúde (Health Check Básico)**: `GET http://localhost:8089/health`
-- **Saúde da Aplicação (Spring Boot Actuator)**: `GET http://localhost:8089/actuator/health`
-- **Métricas Operacionais (Requer ADMIN)**: `GET http://localhost:8089/actuator/metrics`
-- **Documentação Swagger UI**: `http://localhost:8089/swagger-ui.html`
-- **Especificação OpenAPI**: `http://localhost:8089/v3/api-docs`
-- **Login**: `POST http://localhost:8089/api/v1/auth/login`
-- **Atualização de Token (Refresh)**: `POST http://localhost:8089/api/v1/auth/refresh`
-- **Logout (Revogação de Refresh Token)**: `POST http://localhost:8089/api/v1/auth/logout`
-- **Registro de Usuário**: `POST http://localhost:8089/api/v1/auth/register`
-- **Gerenciamento de Usuários**: `http://localhost:8089/api/v1/users`
-- **Gerenciamento de Marcas**: `http://localhost:8089/api/v1/brands`
+As rotas e restrições de acesso de veículos e marcas são definidas pelos respectivos controllers e podem ser consultadas no Swagger UI.
 
 ---
 
-## 🔄 Mecanismo de Refresh Token e Rotação
+## Versionamento do banco de dados
 
-A autenticação implementa renovação de sessão e revogação por meio de **Refresh Tokens** persistidos e rotacionados:
+O projeto utiliza Flyway para gerenciar as alterações do esquema do PostgreSQL de maneira versionada e rastreável.
 
-- **Login (`POST /api/v1/auth/login`)**:
-  - Retorna o token de acesso JWT (curta duração) e o `refreshToken` opaco de longa duração (expiração padrão: 7 dias).
-- **Rotação de Refresh Token (`POST /api/v1/auth/refresh`)**:
-  - Recebe `{ "refreshToken": "<token>" }`.
-  - Valida expiração, revogação prévia e integridade do token.
-  - Revoga o refresh token consumido imediatamente e emite um **novo par** (novo access token JWT + novo refresh token), prevenindo reaproveitamento indevido (replay attacks).
-- **Logout Seguro (`POST /api/v1/auth/logout`)**:
-  - Recebe `{ "refreshToken": "<token>" }` e marca o refresh token ativo como revogado (`revoked = true`), impedindo futuras renovações de sessão.
-- **Tratamento de Exceções**:
-  - Tokens expirados, revogados ou inexistentes retornam status **HTTP 401 Unauthorized** com payload padronizado (`ErroResponse`).
+Os arquivos de migration ficam em:
 
+```text
+src/main/resources/db/migration/
+```
+
+A nomenclatura segue o padrão:
+
+```text
+V<VERSAO>__<descricao>.sql
+```
+
+Exemplos:
+
+```text
+V1__create_initial_schema.sql
+V2__add_new_column_to_users.sql
+V4__create_equipe_and_update_users.sql
+```
+
+Os nomes acima são exemplos de convenção. As migrations efetivamente presentes no repositório definem as versões utilizadas pelo projeto.
+
+### Como criar uma migration
+
+1. Identifique a próxima versão ainda não utilizada.
+2. Crie um novo arquivo SQL no diretório de migrations.
+3. Adicione as alterações necessárias, incluindo tabelas, índices, restrições e chaves estrangeiras.
+4. Atualize as entidades JPA correspondentes.
+5. Confira a compatibilidade com a validação do esquema do Hibernate.
+6. Execute a aplicação e os testes em um banco de desenvolvimento.
+
+**Não altere migrations que já foram aplicadas em ambientes compartilhados.** Crie uma nova migration para realizar alterações posteriores.
+
+### Comandos úteis
+
+Inicie a aplicação para que o Flyway processe as migrations pendentes:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Execute os testes automatizados:
+
+```bash
+./mvnw clean test
+```
+
+Os comandos específicos do Maven Flyway dependem da configuração do plugin e das propriedades de conexão com o banco.
+
+---
+
+## Auditoria
+
+As entidades de clientes utilizam a auditoria do Spring Data JPA para registrar a criação e a última modificação dos registros.
+
+| Campo | Finalidade |
+|---|---|
+| `createdAt` | Data e hora da criação |
+| `updatedAt` | Data e hora da última modificação |
+| `createdBy` | ID do usuário que criou o registro |
+| `updatedBy` | ID do usuário que modificou o registro pela última vez |
+
+A implementação utiliza anotações como:
+
+```java
+@CreatedDate
+private LocalDateTime createdAt;
+
+@LastModifiedDate
+private LocalDateTime updatedAt;
+
+@CreatedBy
+private Long createdBy;
+
+@LastModifiedBy
+private Long updatedBy;
+```
+
+As entidades são configuradas com `AuditingEntityListener`, e a auditoria é habilitada na aplicação.
+
+Uma implementação de `AuditorAware<Long>` obtém o usuário autenticado no contexto do Spring Security para identificar quem executou a operação.
+
+Os campos de auditoria são gerenciados pelo backend e não devem ser controlados diretamente pelo usuário nas requisições normais de cadastro e atualização.
+
+---
+
+## Segurança e limitação de requisições
+
+### JWT e permissões
+
+Os endpoints protegidos exigem autenticação. As anotações de autorização limitam o acesso de acordo com o papel do usuário.
+
+As regras de negócio também devem verificar o acesso aos registros, especialmente nas operações de equipes e clientes.
+
+### Rate Limiting
+
+A aplicação possui um filtro de limitação de requisições utilizando Bucket4j e o algoritmo Token Bucket.
+
+A configuração original documenta os seguintes limites padrão:
+
+- Rotas de autenticação: 10 requisições por minuto por IP.
+- Rotas gerais da API: 60 requisições por minuto por IP.
+
+Os valores efetivos dependem da configuração ativa e devem ser verificados antes da implantação.
+
+A configuração original exclui rotas da documentação e o endpoint de saúde da limitação de requisições.
+
+Quando o limite é excedido, a aplicação pode retornar `429 Too Many Requests`.
+
+Cabeçalhos relevantes:
+
+- `X-Rate-Limit-Remaining`
+- `Retry-After`
+- `X-Rate-Limit-Retry-After-Seconds`
+
+---
+
+## Observabilidade e monitoramento
+
+### Correlation ID
+
+O `CorrelationIdFilter` associa um identificador às requisições HTTP.
+
+- Um cabeçalho `X-Correlation-ID` enviado pelo cliente é preservado quando suportado pela configuração.
+- Se o cabeçalho não existir, um UUID será gerado.
+- O identificador é incluído no cabeçalho da resposta.
+- O SLF4J MDC adiciona o identificador aos logs relevantes.
+- O contexto MDC é limpo ao término do processamento da requisição.
+
+Esse mecanismo facilita a identificação dos logs relacionados a uma mesma chamada da API.
+
+### Spring Boot Actuator e Micrometer
+
+A aplicação disponibiliza endpoints do Actuator e métricas do Micrometer.
+
+Endpoints úteis:
+
+```http
+GET /actuator/health
+GET /actuator/metrics
+```
+
+Dependendo da configuração de segurança, informações básicas de saúde podem ser públicas, enquanto métricas operacionais exigem autenticação administrativa.
+
+As métricas podem incluir:
+
+- Memória e threads da JVM.
+- Quantidade e latência de requisições HTTP.
+- Métricas do pool de conexões HikariCP.
+- Contadores de requisições permitidas e rejeitadas pelo rate limiting.
+
+Informações operacionais sensíveis devem permanecer acessíveis apenas a usuários autorizados.
+
+---
+
+## Refresh Tokens
+
+A autenticação contempla renovação e revogação de sessões por meio de refresh tokens.
+
+### Login
+
+```http
+POST /api/v1/auth/login
+```
+
+Retorna um JWT de acesso e, conforme a implementação de autenticação, um refresh token.
+
+### Renovação
+
+```http
+POST /api/v1/auth/refresh
+Content-Type: application/json
+```
+
+```json
+{
+  "refreshToken": "<refresh_token>"
+}
+```
+
+O fluxo de renovação valida o token enviado, revoga o token consumido e emite um novo par de tokens quando a operação é bem-sucedida.
+
+### Logout
+
+```http
+POST /api/v1/auth/logout
+Content-Type: application/json
+```
+
+```json
+{
+  "refreshToken": "<refresh_token>"
+}
+```
+
+O logout revoga o refresh token ativo informado, impedindo que ele seja utilizado novamente para renovar a sessão.
+
+Tokens expirados, inválidos ou revogados devem ser tratados pela configuração de autenticação e pelo mecanismo de tratamento de exceções da aplicação.
+
+---
+
+## Testes
+
+Execute os testes automatizados com:
+
+```bash
+./mvnw clean test
+```
+
+Para validar o funcionamento durante o desenvolvimento, priorize:
+
+1. Compilação e inicialização da aplicação.
+2. Login e autorização por JWT.
+3. Cadastro de equipes e validação de associação dos vendedores.
+4. Consulta de equipes e remoção de vendedores.
+5. Operações CRUD e pesquisas de clientes.
+6. Testes de autorização para os diferentes papéis.
+7. Migrations e persistência dos dados.
+
+Utilize um banco de testes ou desenvolvimento. Evite operações destrutivas em bancos que contenham dados importantes.
+
+---
+
+## Endpoints úteis
+
+Os caminhos abaixo servem como referência durante o desenvolvimento. A disponibilidade depende da configuração ativa.
+
+| Finalidade | Endpoint |
+|---|---|
+| Login | `POST /api/v1/auth/login` |
+| Cadastro de usuário | `POST /api/v1/auth/register` |
+| Renovação de token | `POST /api/v1/auth/refresh` |
+| Logout | `POST /api/v1/auth/logout` |
+| Gerenciamento de equipes | `/api/v1/equipe` |
+| Gerenciamento de veículos | `/api/v1/vehicle` |
+| Verificação de saúde | `GET /actuator/health` |
+| Métricas operacionais | `GET /actuator/metrics` |
+| Swagger UI | `/swagger-ui/index.html` |
+| Especificação OpenAPI | `/v3/api-docs` |
+
+Para consultar a lista definitiva de rotas, os DTOs aceitos, os códigos HTTP e os requisitos de segurança, utilize o Swagger UI da aplicação em execução.
+
+---
+
+## Boas práticas de desenvolvimento
+
+- Mantenha as chaves primárias separadas dos identificadores exibidos na interface.
+- Utilize DTOs para controlar os dados recebidos e retornados pela API.
+- Centralize as validações de negócio na camada de serviço.
+- Garanta que as permissões sejam verificadas no backend, não apenas no frontend.
+- Utilize migrations do Flyway para evoluir o esquema do banco.
+- Não versione credenciais ou segredos.
+- Não altere migrations já aplicadas em ambientes compartilhados.
+- Confira se a documentação dos endpoints corresponde ao comportamento real da aplicação antes de publicar uma nova versão.

@@ -1,4 +1,4 @@
-package com.commercial_management_system.backend.repository;
+package com.commercial_management_system.backend.specifications;
 
 import com.commercial_management_system.backend.model.Brand;
 import com.commercial_management_system.backend.model.Vehicle;

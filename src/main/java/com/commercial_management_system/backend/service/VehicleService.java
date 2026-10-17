@@ -4,7 +4,7 @@ import com.commercial_management_system.backend.dto.vehicle.VehicleRegister;
 import com.commercial_management_system.backend.dto.vehicle.VehicleResponse;
 import com.commercial_management_system.backend.mapper.VehicleMapper;
 import com.commercial_management_system.backend.model.Vehicle;
-import com.commercial_management_system.backend.repository.SpecsVehicle;
+import com.commercial_management_system.backend.specifications.SpecsVehicle;
 import com.commercial_management_system.backend.repository.VehicleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
-import static com.commercial_management_system.backend.repository.SpecsVehicle.*;
+import static com.commercial_management_system.backend.specifications.SpecsVehicle.*;
 
 @Service
 public class VehicleService {

@@ -39,7 +39,7 @@ class RefreshTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("Teste", "teste@email.com", "11999999999", "senha", UserType.ROLE_USER, UserStatus.ACTIVE);
+        user = new User("Teste", "teste@email.com", "11999999999", "senha", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
     }
 
     // valida que um refresh token e criado com validade futura e salvo no repositorio
