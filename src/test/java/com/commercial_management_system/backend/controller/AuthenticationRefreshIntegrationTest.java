@@ -49,7 +49,7 @@ class AuthenticationRefreshIntegrationTest {
                     email,
                     "11977776666",
                     passwordEncoder.encode(senha),
-                    UserType.ROLE_USER,
+                    UserType.ROLE_ADMIN,
                     UserStatus.ACTIVE
             ));
         }

@@ -46,7 +46,7 @@ class UserServiceTest {
                 "joao@example.com",
                 "11999998888",
                 "senha123",
-                UserType.ROLE_USER
+                UserType.ROLE_ADMIN
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -72,7 +72,7 @@ class UserServiceTest {
                 "maria@example.com",
                 "11988887777",
                 "senha123",
-                UserType.ROLE_USER
+                UserType.ROLE_ADMIN
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
@@ -86,7 +86,7 @@ class UserServiceTest {
     @DisplayName("deve listar usuarios com paginacao")
     void deveListarUsuariosComPaginacao() {
         Pageable pageable = PageRequest.of(0, 10);
-        User user = new User("Carlos", "carlos@example.com", "11977776666", "hash", UserType.ROLE_USER, UserStatus.ACTIVE);
+        User user = new User("Carlos", "carlos@example.com", "11977776666", "hash", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
         Page<User> page = new PageImpl<>(List.of(user));
 
         when(userRepository.findAll(pageable)).thenReturn(page);

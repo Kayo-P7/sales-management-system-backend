@@ -2,15 +2,7 @@ package com.commercial_management_system.backend.model;
 
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -53,6 +45,11 @@ public class User implements UserDetails {
     @Column(name = "user_status", nullable = false)
     private UserStatus userStatus;
 
+
+    @ManyToOne
+    @JoinColumn(name = "equipe_id")
+    private Equipe equipe;
+
     @Version
     private Long version;
 
@@ -71,7 +68,7 @@ public class User implements UserDetails {
         if (userType != null) {
             return List.of(new SimpleGrantedAuthority(userType.name()));
         }
-        return List.of(new SimpleGrantedAuthority(UserType.ROLE_USER.name()));
+        return List.of(new SimpleGrantedAuthority(UserType.ROLE_ADMIN.name()));
     }
 
     @Override
