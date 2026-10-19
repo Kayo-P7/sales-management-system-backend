@@ -11,8 +11,6 @@ import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.EntityNotFoundException;
 
-import java.lang.annotation.Target;
-
 @Mapper(componentModel = "spring", imports = {EntityNotFoundException.class})
 public abstract class VehicleMapper {
     @Autowired

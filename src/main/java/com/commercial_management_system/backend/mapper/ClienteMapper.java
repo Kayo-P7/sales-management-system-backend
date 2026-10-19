@@ -3,7 +3,11 @@ package com.commercial_management_system.backend.mapper;
 import com.commercial_management_system.backend.dto.cliente.ClienteRequest;
 import com.commercial_management_system.backend.dto.cliente.ClienteResponse;
 import com.commercial_management_system.backend.model.Cliente;
-import org.mapstruct.*;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public abstract class ClienteMapper {
