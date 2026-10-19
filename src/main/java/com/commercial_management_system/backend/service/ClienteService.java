@@ -2,6 +2,7 @@ package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.dto.cliente.ClienteRequest;
 import com.commercial_management_system.backend.dto.cliente.ClienteResponse;
+import com.commercial_management_system.backend.exception.ResourceNotFoundException;
 import com.commercial_management_system.backend.mapper.ClienteMapper;
 import com.commercial_management_system.backend.model.Cliente;
 import com.commercial_management_system.backend.model.User;
@@ -36,16 +37,17 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public ClienteResponse findById(Long id) {
         User usuario = getUsuarioAutenticado();
-        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId()).orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
         return clienteMapper.toClientResponse(cliente);
     }
-
 
     @Transactional
     public void deleteClienteById(Long id) {
         User usuario = getUsuarioAutenticado();
 
-        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId()).orElseThrow(() -> new RuntimeException("Usuario não encontrado"));
+        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
         clienteRepository.delete(cliente);
     }
 
@@ -53,7 +55,8 @@ public class ClienteService {
     public ClienteResponse updateCliente(Long id, ClienteRequest clienteRequest) {
         User usuario = getUsuarioAutenticado();
         Cliente cliente = clienteRepository
-                .findByIdAndCreatedBy(id, usuario.getId()).orElseThrow(() -> new RuntimeException("Id not found"));
+                .findByIdAndCreatedBy(id, usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
 
         clienteMapper.updateCliente(clienteRequest, cliente);
 
@@ -64,17 +67,15 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponse updateClienteParcial(Long id, ClienteRequest clienteRequest) {
-
-        User usuario = getUsuarioAutenticado();// mostra quem é o usuario que se autenticou
-        //só pode ser atualizado pelo responsavel que criou esse cliente
-        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId()).orElseThrow(() -> new RuntimeException("Id not found"));
+        User usuario = getUsuarioAutenticado();
+        Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
 
         clienteMapper.parcialPatchUpdate(clienteRequest, cliente);
 
         clienteRepository.save(cliente);
         return clienteMapper.toClientResponse(cliente);
     }
-
 
     @Transactional(readOnly = true)
     public Page<ClienteResponse> findByName(String name, Pageable pageable) {
@@ -89,16 +90,13 @@ public class ClienteService {
         User usuario = getUsuarioAutenticado();
         Cliente cliente = clienteRepository
                 .findByCreatedByAndTelephoneContaining(usuario.getId(), telephone)
-                .orElseThrow(() -> new RuntimeException("Telephone not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com telefone: " + telephone));
 
         return clienteMapper.toClientResponse(cliente);
     }
 
-
     @Transactional(readOnly = true)
     public Page<ClienteResponse> listarClientes(Pageable pageable) {
-
-
         User usuario = getUsuarioAutenticado();
 
         return clienteRepository
@@ -106,18 +104,11 @@ public class ClienteService {
                 .map(clienteMapper::toClientResponse);
     }
 
-
     private User getUsuarioAutenticado() {
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null
-                || !(authentication.getPrincipal() instanceof User usuario)) {
-            throw new
-                    IllegalStateException
-                    ("Não foi possivel identificar o usuario autenticado ");
+        if (authentication == null || !(authentication.getPrincipal() instanceof User usuario)) {
+            throw new IllegalStateException("nao foi possivel identificar o usuario autenticado");
         }
 
         return usuario;
