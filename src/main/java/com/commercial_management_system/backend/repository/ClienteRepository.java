@@ -11,13 +11,11 @@ import java.util.Optional;
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
+    Optional<Cliente> findByIdAndCreatedBy(Long id, Long createdBy);
 
-    Optional<Cliente> findByIdAndCreatedBy(Long id, Long CreatedBy);
     Optional<Cliente> findByCreatedByAndTelephoneContaining(Long createdBy, String telephone);
+
     Page<Cliente> findAllByCreatedBy(Long createdBy, Pageable pageable);
 
-    Page<Cliente> findByNameAndCreatedByContainingIgnoreCase
-            ( Long createdBy, String name, Pageable pageable);
-
-
+    Page<Cliente> findByNameContainingIgnoreCaseAndCreatedBy(String name, Long createdBy, Pageable pageable);
 }

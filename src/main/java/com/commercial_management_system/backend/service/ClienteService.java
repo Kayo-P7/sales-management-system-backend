@@ -76,15 +76,15 @@ public class ClienteService {
     }
 
 
+    @Transactional(readOnly = true)
     public Page<ClienteResponse> findByName(String name, Pageable pageable) {
-
         User usuario = getUsuarioAutenticado();
-        Page<Cliente> clientes = clienteRepository.findByNameAndCreatedByContainingIgnoreCase(usuario.getId(), name, pageable);
+        Page<Cliente> clientes = clienteRepository.findByNameContainingIgnoreCaseAndCreatedBy(name, usuario.getId(), pageable);
 
         return clientes.map(clienteMapper::toClientResponse);
     }
 
-
+    @Transactional(readOnly = true)
     public ClienteResponse findByTelephone(String telephone) {
         User usuario = getUsuarioAutenticado();
         Cliente cliente = clienteRepository
