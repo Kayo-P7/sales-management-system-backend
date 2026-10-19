@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     // trata recurso nao encontrado no banco de dados
-    @ExceptionHandler(UserNotFoundException.class)
+    @ExceptionHandler({UserNotFoundException.class, ResourceNotFoundException.class})
     public ResponseEntity<ErroResponse> handleNotFound(
-            UserNotFoundException ex,
+            RuntimeException ex,
             HttpServletRequest request) {
         return build(
                 HttpStatus.NOT_FOUND,
@@ -137,14 +137,30 @@ public class GlobalExceptionHandler {
         );
     }
 
-    // captura excecoes genericas nao mapeadas
+    // trata regras de negocio violadas e estados invalidos
+    @ExceptionHandler({
+            BusinessException.class,
+            IllegalArgumentException.class,
+            IllegalStateException.class
+    })
+    public ResponseEntity<ErroResponse> handleBusinessException(
+            RuntimeException ex,
+            HttpServletRequest request) {
+        return build(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    // captura excecoes genericas nao mapeadas sem expor detalhes internos
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResponse> handleGeneric(
             Exception ex,
             HttpServletRequest request) {
         return build(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "erro interno no servidor: " + ex.getMessage(),
+                "ocorreu um erro interno no servidor",
                 request.getRequestURI()
         );
     }
