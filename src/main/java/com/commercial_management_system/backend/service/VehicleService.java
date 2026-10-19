@@ -20,9 +20,9 @@ import static com.commercial_management_system.backend.specifications.SpecsVehic
 public class VehicleService {
 
 
-    private VehicleRepository vehicleRepository;
-    private VehicleMapper vehicleMapper;
-    private SpecsVehicle specs;
+    private final VehicleRepository vehicleRepository;
+    private final VehicleMapper vehicleMapper;
+    private final SpecsVehicle specs;
 
     public VehicleService(VehicleRepository vehicleRepository, VehicleMapper vehicleMapper, SpecsVehicle specs) {
         this.vehicleRepository = vehicleRepository;
@@ -87,15 +87,12 @@ public class VehicleService {
                 .map(vehicleMapper::toVehicleResponseSpecs);
     }
 
+    @Transactional
     public void deleteVehicleById(Long id) {
-
         vehicleRepository.deleteById(id);
     }
 
-    public void deleteVehicleByName(String name) {
-        vehicleRepository.deleteByName(name);
-    }
-
+    @Transactional
     public VehicleResponse updateVehicle(Long id, VehicleRegister vehicleRegister) {
         Vehicle vehicle = vehicleRepository
                 .findById(id).orElseThrow(() -> new RuntimeException("Id not found"));
@@ -106,8 +103,8 @@ public class VehicleService {
         return vehicleMapper.toVehicleResponse(vehicle);
     }
 
-    public VehicleResponse updateVehicleBrand(Long id, VehicleRegister vehicleRegister){
-
+    @Transactional
+    public VehicleResponse updateVehicleBrand(Long id, VehicleRegister vehicleRegister) {
         Vehicle vehicle = vehicleRepository.findById(id).orElseThrow(() -> new RuntimeException("Id not found"));
 
         vehicleMapper.updateVehicleBrand(vehicleRegister, vehicle);

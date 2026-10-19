@@ -93,17 +93,8 @@ public class VehicleController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleterVehicleById(@PathVariable("id") Long id) {
-
+    public ResponseEntity<Void> deleteVehicleById(@PathVariable("id") Long id) {
         vehicleService.deleteVehicleById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{name}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteVehicleByName(@PathVariable("name") String name) {
-
-        vehicleService.deleteVehicleByName(name);
         return ResponseEntity.noContent().build();
     }
 
