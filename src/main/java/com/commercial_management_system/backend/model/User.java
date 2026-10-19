@@ -68,7 +68,7 @@ public class User implements UserDetails {
         if (userType != null) {
             return List.of(new SimpleGrantedAuthority(userType.name()));
         }
-        return List.of(new SimpleGrantedAuthority(UserType.ROLE_ADMIN.name()));
+        return List.of();
     }
 
     @Override

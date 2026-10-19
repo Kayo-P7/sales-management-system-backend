@@ -117,7 +117,6 @@ public class EquipeService {
     }
 
 
-    /// ///////////////////////////////////
     public User getUsuarioAuthenticado() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

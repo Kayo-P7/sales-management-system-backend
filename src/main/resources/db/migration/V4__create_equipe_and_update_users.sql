@@ -19,9 +19,14 @@ ALTER TABLE users
         FOREIGN KEY (equipe_id)
             REFERENCES equipe_tb(id);
 
--- 3. Atualizar os papéis permitidos
+-- 3. atualizar os papeis permitidos
 ALTER TABLE users
 DROP CONSTRAINT chk_users_user_type;
+
+-- migra registros legados para evitar violacao da nova constraint
+UPDATE users
+SET user_type = 'ROLE_VENDEDOR'
+WHERE user_type = 'ROLE_USER';
 
 ALTER TABLE users
     ADD CONSTRAINT chk_users_user_type
