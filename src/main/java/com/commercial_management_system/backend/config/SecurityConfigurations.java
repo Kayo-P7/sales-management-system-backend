@@ -52,7 +52,7 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicle/**", "/api/v1/vehicle").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vehicles/**", "/api/v1/vehicles", "/api/v1/vehicle/**", "/api/v1/vehicle").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // restringe endpoints operacionais e metricas do actuator para administradores
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
