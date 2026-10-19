@@ -10,6 +10,9 @@ public record EquipeResponse(
         @Schema(description = "identificador unico da equipe", example = "1")
         Long id,
 
+        @Schema(description = "nome identificador da equipe", example = "Equipe Alpha")
+        String nome,
+
         @Schema(description = "lista de vendedores vinculados a equipe")
         List<UserSummaryResponse> vendedores,
 
