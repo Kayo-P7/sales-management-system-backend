@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,5 +55,23 @@ class ActuatorSecurityTest {
         mockMvc.perform(get("/actuator/metrics"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.names").isArray());
+    }
+
+    // valida que rotas de veiculos exigem autenticacao retornando 401 para anonimos
+    @Test
+    @DisplayName("deve retornar 401 unauthorized ao acessar /api/v1/vehicles sem autenticacao")
+    void deveRetornarUnauthorizedAoAcessarVeiculosSemAutenticacao() throws Exception {
+        mockMvc.perform(get("/api/v1/vehicles"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // valida que endpoint de cadastro administrativo de usuarios bloqueia anonimos com 401
+    @Test
+    @DisplayName("deve retornar 401 unauthorized ao tentar cadastrar usuario sem autenticacao")
+    void deveRetornarUnauthorizedAoCadastrarUsuarioSemAutenticacao() throws Exception {
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
     }
 }
