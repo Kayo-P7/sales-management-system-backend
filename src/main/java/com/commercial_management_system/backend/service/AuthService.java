@@ -1,6 +1,8 @@
 package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.dto.RegisterRequest;
+import com.commercial_management_system.backend.enums.UserStatus;
+import com.commercial_management_system.backend.enums.UserType;
 import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
@@ -32,8 +34,8 @@ public class AuthService {
                 request.email(),
                 request.telephone(),
                 senhaCriptografada,
-                request.userType(),
-                request.userStatus()
+                UserType.ROLE_VENDEDOR,
+                UserStatus.ACTIVE
         );
         userRepository.save(newUser);
     }
