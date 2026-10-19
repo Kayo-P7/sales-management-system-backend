@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,9 +27,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name="cliente", description = "cadastrar cliente")
+@Tag(name = "clientes", description = "gerenciamento e cadastro de clientes")
 @RestController
-@RequestMapping("/api/v1/cliente")
+@RequestMapping("/api/v1/clientes")
 public class ClienteController {
 
     private final ClienteService clienteService;
@@ -37,10 +38,9 @@ public class ClienteController {
         this.clienteService = clienteService;
     }
 
-
-    @Operation(summary = "cadastrar cliente", description = "cadastra um cliente")
+    @Operation(summary = "cadastrar cliente", description = "cadastra um novo cliente vinculado ao usuario autenticado")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "cliente cadastrada com sucesso",
+            @ApiResponse(responseCode = "201", description = "cliente cadastrado com sucesso",
                     content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
             @ApiResponse(responseCode = "400", description = "dados de requisicao invalidos",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
@@ -51,108 +51,122 @@ public class ClienteController {
     })
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     @PostMapping
-    public ResponseEntity<ClienteResponse> save(@RequestBody ClienteRequest clienteRequest) {
-
+    public ResponseEntity<ClienteResponse> save(@Valid @RequestBody ClienteRequest clienteRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(clienteService.save(clienteRequest));
     }
 
-    @Operation(summary = "buscar cliente por id", description = "retorna os detalhes de uma cliente especifica")
+    @Operation(summary = "buscar cliente por id", description = "retorna os detalhes de um cliente especifico")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "cliente encontrada com sucesso",
-                    content = @Content(schema = @Schema(implementation =    ClienteResponse.class))),
+            @ApiResponse(responseCode = "200", description = "cliente encontrado com sucesso",
+                    content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
             @ApiResponse(responseCode = "401", description = "nao autenticado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "404", description = "cliente nao encontrada",
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "cliente nao encontrado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     @GetMapping("/{id}")
     public ResponseEntity<ClienteResponse> findById(@PathVariable("id") Long id) {
-
-        return ResponseEntity.status(HttpStatus.FOUND).body(clienteService.findById(id));
+        return ResponseEntity.ok(clienteService.findById(id));
     }
 
+    @Operation(summary = "excluir cliente por id", description = "remove um cliente do sistema")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "cliente excluido com sucesso"),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "cliente nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClienteById(@PathVariable("id") Long id) {
-
         clienteService.deleteClienteById(id);
         return ResponseEntity.noContent().build();
     }
 
-
-
+    @Operation(summary = "atualizar cliente", description = "atualiza os dados de um cliente existente")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "cliente atualizado",
+            @ApiResponse(responseCode = "200", description = "cliente atualizado com sucesso",
                     content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
-            @ApiResponse(responseCode = "302", description = "cliente encontrado"),
-            @ApiResponse(responseCode = "400", description = "dados do veiculo invalido",
+            @ApiResponse(responseCode = "400", description = "dados do cliente invalidos",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão de acesso a esse endpoint ",
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "cliente nao encontrado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
-
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     @PutMapping("/{id}")
-    public ResponseEntity<ClienteResponse> updateCliente(@PathVariable("id") Long id, @RequestBody ClienteRequest clienteRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(clienteService.updateCliente(id, clienteRequest));
-
+    public ResponseEntity<ClienteResponse> updateCliente(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody ClienteRequest clienteRequest) {
+        return ResponseEntity.ok(clienteService.updateCliente(id, clienteRequest));
     }
+
+    @Operation(summary = "atualizar cliente parcialmente", description = "atualiza campos especificos de um cliente")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Atualização feita"),
-            @ApiResponse(responseCode = "401", description = "falta de authenticação para a requisição "),
-            @ApiResponse(responseCode = "403", description = "Você não tem permissão para executar essa requisição"),
-            @ApiResponse(responseCode = "400", description = "dados invalidos")
+            @ApiResponse(responseCode = "200", description = "atualizacao parcial realizada com sucesso",
+                    content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
+            @ApiResponse(responseCode = "400", description = "dados invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "cliente nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     @PatchMapping("/{id}")
-    public ResponseEntity<ClienteResponse> updateClienteParcial(@PathVariable("id") Long id, @RequestBody ClienteRequest clienteRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(clienteService.updateClienteParcial(id, clienteRequest));
-
+    public ResponseEntity<ClienteResponse> updateClienteParcial(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody ClienteRequest clienteRequest) {
+        return ResponseEntity.ok(clienteService.updateClienteParcial(id, clienteRequest));
     }
 
-    @Operation(summary = "buscar cliente", description = "faz a busca do cliente pelo nome")
+    @Operation(summary = "buscar cliente por telefone", description = "retorna cliente associado ao telefone informado")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Veiculo encontrado",
+            @ApiResponse(responseCode = "200", description = "cliente encontrado com sucesso",
                     content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados da requisição invalidos",
+            @ApiResponse(responseCode = "400", description = "dados da requisicao invalidos",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão para acessar esse endpoint",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    }
-    )
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR', 'SUPERVISOR')")
-    @GetMapping("/buscar/name")
-    public ResponseEntity<Page<ClienteResponse>> findByName(@RequestParam String name, Pageable pageable) {
-
-        return ResponseEntity.status(HttpStatus.FOUND).body(clienteService.findByName(name, pageable));
-    }
-
-
-    @Operation(summary = "buscar telephone", description = "buscar número de telephone")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "telephone encontrado",
-                    content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados da requisição invalidos",
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão para acessar esse endpoint",
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "cliente nao encontrado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    }
-    )
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR', 'SUPERVISOR')")
-    @GetMapping("/buscar/telephone")
+    @GetMapping(params = "telephone")
     public ResponseEntity<ClienteResponse> findByTelephone(@RequestParam String telephone) {
-        return ResponseEntity.status(HttpStatus.FOUND).body(clienteService.findByTelephone(telephone));
+        return ResponseEntity.ok(clienteService.findByTelephone(telephone));
     }
 
-
-
-    @GetMapping
+    @Operation(summary = "listar clientes", description = "retorna pagina de clientes vinculados ao usuario autenticado com filtro opcional por nome")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "clientes listados com sucesso",
+                    content = @Content(schema = @Schema(implementation = ClienteResponse.class))),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR', 'SUPERVISOR')")
-    public ResponseEntity<Page<ClienteResponse>> listarClientes(Pageable pageable) {
-        return ResponseEntity
-                .status(HttpStatus.FOUND)
-                .body(clienteService.listarClientes(pageable));
+    @GetMapping
+    public ResponseEntity<Page<ClienteResponse>> listarClientes(
+            @RequestParam(required = false) String name,
+            Pageable pageable) {
+        if (name != null && !name.isBlank()) {
+            return ResponseEntity.ok(clienteService.findByName(name, pageable));
+        }
+        return ResponseEntity.ok(clienteService.listarClientes(pageable));
     }
-
 }

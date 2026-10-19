@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ import java.math.BigDecimal;
 
 @Tag(name = "vehicle", description = "gerenciamento de veiculos e marcas do sistema")
 @RestController
-@RequestMapping("/api/v1/vehicle")
+@RequestMapping("/api/v1/vehicles")
 public class VehicleController {
 
     private final VehicleService vehicleService;
@@ -53,39 +54,33 @@ public class VehicleController {
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     }
     )
-    public ResponseEntity<VehicleResponse> save(@RequestBody VehicleRegister vehicleRegister) {
-
+    public ResponseEntity<VehicleResponse> save(@Valid @RequestBody VehicleRegister vehicleRegister) {
         return ResponseEntity.status(HttpStatus.CREATED).body(vehicleService.save(vehicleRegister));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "buscar vehicle pelo id", description = "buscar vehicle pelo id")
+    @Operation(summary = "buscar veiculo pelo id", description = "retorna os dados de um veiculo especifico")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Veiculo encontrado",
+            @ApiResponse(responseCode = "200", description = "veiculo encontrado com sucesso",
                     content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados da requisição invalidos",
+            @ApiResponse(responseCode = "400", description = "dados da requisicao invalidos",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão para acessar esse endpoint",
+            @ApiResponse(responseCode = "404", description = "veiculo nao encontrado",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    }
-    )
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    })
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VENDEDOR')")
     public ResponseEntity<VehicleResponse> findById(@PathVariable("id") Long id) {
-        return ResponseEntity.status(HttpStatus.FOUND).body(vehicleService.findById(id));
+        return ResponseEntity.ok(vehicleService.findById(id));
     }
-
 
     @GetMapping
-    @Operation(summary = "buscar veiculos", description = "buscar vehicle pelo pelo name, color, price ou nome da marca")
+    @Operation(summary = "buscar veiculos", description = "lista veiculos com filtros opcionais por nome, cor, preco ou marca")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Veiculo encontrado",
+            @ApiResponse(responseCode = "200", description = "veiculos listados com sucesso",
                     content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados da requisição invalidos",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão para acessar esse endpoint",
+            @ApiResponse(responseCode = "400", description = "parametros de busca invalidos",
                     content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    }
-    )
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR', 'SUPERVISOR')")
     public ResponseEntity<Page<VehicleResponse>> findVehicle(
             @RequestParam(required = false) String name,
@@ -94,9 +89,7 @@ public class VehicleController {
             @RequestParam(required = false) String nameBrand,
             Pageable pageable
     ) {
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .body(vehicleService.findVehicle(
-                        name, color, price, nameBrand, pageable));
+        return ResponseEntity.ok(vehicleService.findVehicle(name, color, price, nameBrand, pageable));
     }
 
     @DeleteMapping("/{id}")
@@ -108,33 +101,39 @@ public class VehicleController {
 
     @PatchMapping("/{id}")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Atualização feita"),
-            @ApiResponse(responseCode = "401", description = "falta de authenticação para a requisição "),
-            @ApiResponse(responseCode = "403", description = "Você não tem permissão para executar essa requisição"),
-            @ApiResponse(responseCode = "400", description = "dados invalidos")
+            @ApiResponse(responseCode = "200", description = "marca do veiculo atualizada com sucesso",
+                    content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
+            @ApiResponse(responseCode = "400", description = "dados invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "401", description = "nao autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "veiculo nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VehicleResponse> updateVehicleBrand(
             @PathVariable("id") Long id,
-            @RequestBody VehicleRegister vehicleRegister) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(vehicleService.updateVehicleBrand(id, vehicleRegister));
+            @Valid @RequestBody VehicleRegister vehicleRegister) {
+        return ResponseEntity.ok(vehicleService.updateVehicleBrand(id, vehicleRegister));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Veiculo atualizado",
-            content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
-            @ApiResponse(responseCode = "302", description = "Veiculo encontrado"),
-            @ApiResponse(responseCode = "400", description = "dados do veiculo invalido",
-            content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "403", description = "você não tem permissão de acesso a esse endpoint ",
-            content = @Content(schema = @Schema(implementation = ErroResponse.class)))
+            @ApiResponse(responseCode = "200", description = "veiculo atualizado com sucesso",
+                    content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
+            @ApiResponse(responseCode = "400", description = "dados do veiculo invalidos",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "403", description = "acesso negado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "veiculo nao encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
     })
     public ResponseEntity<VehicleResponse> updateVehicle(
             @PathVariable("id") Long id,
-            @RequestBody VehicleRegister vehicleRegister) {
+            @Valid @RequestBody VehicleRegister vehicleRegister) {
         return ResponseEntity.ok(vehicleService.updateVehicle(id, vehicleRegister));
     }
 }

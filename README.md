@@ -121,7 +121,7 @@ Crie o arquivo de variáveis de ambiente a partir do modelo:
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` para configurar as credenciais do banco, as portas e o segredo JWT, de acordo com as variáveis utilizadas pela aplicação.
+Edite o arquivo `.env` para configurar as credenciais do banco, as portas, o segredo JWT e as origens permitidas para requisições cross-origin (`CORS_ALLOWED_ORIGINS`), de acordo com as variáveis utilizadas pela aplicação.
 
 **Não envie credenciais reais, senhas ou segredos JWT para o repositório.** O arquivo `.env` deve permanecer fora do controle de versão quando contiver informações sensíveis.
 
@@ -242,20 +242,20 @@ Os usuários mantêm IDs numéricos globais e únicos no banco de dados. Identif
 
 ### Endpoints de equipes
 
-Prefixo: `/api/v1/equipe`
+Prefixo: `/api/v1/equipes`
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `POST` | `/api/v1/equipe` | Cadastra uma equipe e associa vendedores |
-| `GET` | `/api/v1/equipe` | Consulta a equipe do supervisor autenticado |
-| `GET` | `/api/v1/equipe/vendedores/{id}` | Consulta a equipe a partir do ID de um vendedor |
-| `DELETE` | `/api/v1/equipe/vendedores/{id}` | Remove um vendedor da equipe |
+| `POST` | `/api/v1/equipes` | Cadastra uma equipe e associa vendedores |
+| `GET` | `/api/v1/equipes` | Consulta a equipe do supervisor autenticado |
+| `GET` | `/api/v1/equipes/vendedores/{id}` | Consulta a equipe a partir do ID de um vendedor |
+| `DELETE` | `/api/v1/equipes/vendedores/{id}` | Remove um vendedor da equipe |
 
 A autorização efetiva e os códigos de resposta devem corresponder à implementação atual do controller e do serviço. Consulte o Swagger para verificar os detalhes de cada operação.
 
 ### Exemplo de cadastro de equipe
 
-Requisição para `POST /api/v1/equipe`:
+Requisição para `POST /api/v1/equipes`:
 
 ```json
 {
@@ -275,7 +275,7 @@ O cadastro utiliza uma transação para permitir que as alterações sejam rever
 Exemplo de requisição:
 
 ```http
-DELETE /api/v1/equipe/vendedores/3
+DELETE /api/v1/equipes/vendedores/3
 ```
 
 A operação remove a associação do vendedor com a equipe, mas não exclui a conta do usuário.
@@ -333,7 +333,7 @@ A API disponibiliza operações para gerenciamento de veículos e marcas.
 ### Exemplo de cadastro
 
 ```http
-POST /api/v1/vehicle
+POST /api/v1/vehicles
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -341,14 +341,14 @@ Authorization: Bearer <access_token>
 ```json
 {
   "name": "Corolla",
-  "color": "BLACK",
-  "vehicleType": "SEDAN",
+  "color": "PRETO",
+  "vehicleType": "CAR",
   "price": 120000.00,
   "brandId": 1
 }
 ```
 
-Utilize valores existentes nos enums e um `brandId` válido.
+Utilize valores existentes nos enums (`VehicleColor`: `PRETO`, `BRANCO`, `PRATA`, `VERMELHO`, `AZUL`, `CINZA`, `VERDE`; `VehicleType`: `CAR`, `MOTO`) e um `brandId` válido.
 
 As rotas e restrições de acesso de veículos e marcas são definidas pelos respectivos controllers e podem ser consultadas no Swagger UI.
 
@@ -561,29 +561,28 @@ Tokens expirados, inválidos ou revogados devem ser tratados pela configuração
 
 ## Testes
 
-Execute os testes automatizados com:
+A aplicação dispõe de uma suíte abrangente com **66 testes automatizados** e 100% de cobertura funcional aprovada. O catálogo detalhado, os cenários cobertos e as diretrizes de execução estão documentados em [`TESTES.md`](TESTES.md).
+
+Execute a suíte completa de testes com:
 
 ```bash
 ./mvnw clean test
 ```
 
-Para validar o funcionamento durante o desenvolvimento, priorize:
+A arquitetura de testes cobre:
 
-1. Compilação e inicialização da aplicação.
-2. Login e autorização por JWT.
-3. Cadastro de equipes e validação de associação dos vendedores.
-4. Consulta de equipes e remoção de vendedores.
-5. Operações CRUD e pesquisas de clientes.
-6. Testes de autorização para os diferentes papéis.
-7. Migrations e persistência dos dados.
-
-Utilize um banco de testes ou desenvolvimento. Evite operações destrutivas em bancos que contenham dados importantes.
+1. **Testes Unitários:** isolamento de regras de negócio em serviços com Mockito (`BrandService`, `ClienteService`, `VehicleService`, `EquipeService`, `UserService`, `RefreshTokenService`, `RateLimitService`).
+2. **Testes de Integração Web (MockMvc):** validação de contratos REST, serialização JSON e códigos HTTP (`BrandController`, `ClienteController`, `VehicleController`, `EquipeController`, `HealthController`).
+3. **Testes de Segurança e Tokens:** autenticação completa, rotação atômica de refresh tokens e controle de acesso a endpoints do Actuator.
+4. **Testes de Persistência e Repositório (`@DataJpaTest`):** consultas derivadas, paginação e filtros case-insensitive contra banco em memória H2.
+5. **Testes de Concorrência e Lock Otimista:** validação de versionamento (`@Version`) contra conflitos de escrita concorrente.
+6. **Testes de Tratamento de Exceções:** serialização padronizada de `ResourceNotFoundException`, `BusinessException` e Bean Validation no `GlobalExceptionHandler`.
 
 ---
 
 ## Endpoints úteis
 
-Os caminhos abaixo servem como referência durante o desenvolvimento. A disponibilidade depende da configuração ativa.
+Os caminhos abaixo servem como referência durante o desenvolvimento. A disponibilidade depende da configuração ativa e das permissões do usuário autenticado.
 
 | Finalidade | Endpoint |
 |---|---|
@@ -591,8 +590,10 @@ Os caminhos abaixo servem como referência durante o desenvolvimento. A disponib
 | Cadastro de usuário | `POST /api/v1/auth/register` |
 | Renovação de token | `POST /api/v1/auth/refresh` |
 | Logout | `POST /api/v1/auth/logout` |
-| Gerenciamento de equipes | `/api/v1/equipe` |
-| Gerenciamento de veículos | `/api/v1/vehicle` |
+| Gerenciamento de clientes | `/api/v1/clientes` |
+| Gerenciamento de equipes | `/api/v1/equipes` |
+| Gerenciamento de veículos | `/api/v1/vehicles` |
+| Gerenciamento de marcas | `/api/v1/brands` |
 | Verificação de saúde | `GET /actuator/health` |
 | Métricas operacionais | `GET /actuator/metrics` |
 | Swagger UI | `/swagger-ui/index.html` |

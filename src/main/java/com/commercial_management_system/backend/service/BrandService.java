@@ -2,6 +2,7 @@ package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.dto.brand.BrandRequest;
 import com.commercial_management_system.backend.dto.brand.BrandResponse;
+import com.commercial_management_system.backend.exception.ResourceNotFoundException;
 import com.commercial_management_system.backend.model.Brand;
 import com.commercial_management_system.backend.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class BrandService {
     @Transactional(readOnly = true)
     public BrandResponse buscarPorId(Long id) {
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("marca nao encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("marca nao encontrada"));
         return BrandResponse.from(brand);
     }
 }

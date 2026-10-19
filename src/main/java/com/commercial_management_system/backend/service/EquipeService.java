@@ -3,6 +3,8 @@ package com.commercial_management_system.backend.service;
 import com.commercial_management_system.backend.dto.equipe.EquipeRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeResponse;
 import com.commercial_management_system.backend.enums.UserType;
+import com.commercial_management_system.backend.exception.BusinessException;
+import com.commercial_management_system.backend.exception.ResourceNotFoundException;
 import com.commercial_management_system.backend.mapper.EquipeMapper;
 import com.commercial_management_system.backend.model.Equipe;
 import com.commercial_management_system.backend.model.User;
@@ -34,12 +36,10 @@ public class EquipeService {
         User usuarioAutenticado = getUsuarioAuthenticado();
 
         if (equipeRepository.existsBySupervisorId(usuarioAutenticado.getId())) {
-            throw new RuntimeException(
-                    "O supervisor já possui uma equipe"
-            );
+            throw new BusinessException("o supervisor ja possui uma equipe");
         }
         if (usuarioAutenticado.getUserType() != UserType.ROLE_SUPERVISOR) {
-            throw new RuntimeException("Apenas supervisores podem criar sua própria equipe");
+            throw new BusinessException("apenas supervisores podem criar sua propria equipe");
         }
         Equipe equipe = equipeMapper.toEquipe(equipeRequest);
 
@@ -49,24 +49,20 @@ public class EquipeService {
 
         for (Long vendedorId : equipeRequest.vendedores()) {
             User vendedor = userRepository.findById(vendedorId)
-                    .orElseThrow(() -> new RuntimeException("Vendedor não encontrado"));
-
+                    .orElseThrow(() -> new ResourceNotFoundException("vendedor nao encontrado com id: " + vendedorId));
 
             if (vendedor.getUserType() != UserType.ROLE_VENDEDOR) {
-                throw new RuntimeException("O usuário informado não é um vendedor");
+                throw new BusinessException("o usuario informado nao e um vendedor");
             }
 
             if (vendedor.getEquipe() != null) {
-                throw new RuntimeException(
-                        "O vendedor já pertence a uma equipe"
-                );
+                throw new BusinessException("o vendedor ja pertence a uma equipe");
             }
             vendedor.setEquipe(equipe);
             userRepository.save(vendedor);
         }
 
         return equipeMapper.toEquipeResponse(equipe);
-
     }
 
     @Transactional(readOnly = true)
@@ -76,19 +72,18 @@ public class EquipeService {
 
         Equipe equipe = equipeRepository
                 .findBySupervisor_IdAndVendedores_Id(usuario.getId(), vendedorId)
-                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("equipe nao encontrada para o vendedor informado"));
 
         return equipeMapper.toEquipeResponse(equipe);
     }
-
 
     @Transactional(readOnly = true)
     public EquipeResponse findAllBySupervisorId() {
 
         User usuario = getUsuarioAuthenticado();
 
-        Equipe equipe = equipeRepository.findAllBySupervisorId(usuario.getId()).orElseThrow(() -> new RuntimeException("Equipe do supervisor não encontrada "));
-
+        Equipe equipe = equipeRepository.findAllBySupervisorId(usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("equipe do supervisor nao encontrada"));
 
         return equipeMapper.toEquipeResponse(equipe);
     }
@@ -98,24 +93,23 @@ public class EquipeService {
         User supervisor = getUsuarioAuthenticado();
 
         if (supervisor.getUserType() != UserType.ROLE_SUPERVISOR) {
-            throw new RuntimeException("Apenas supervisores podem remover vendedores da equipe");
+            throw new BusinessException("apenas supervisores podem remover vendedores da equipe");
         }
 
         User vendedor = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vendedor não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("vendedor nao encontrado com id: " + id));
 
         Equipe equipe = vendedor.getEquipe();
 
         if (equipe == null ||
                 equipe.getSupervisor() == null ||
                 !equipe.getSupervisor().getId().equals(supervisor.getId())) {
-            throw new RuntimeException("Vendedor não pertence à sua equipe");
+            throw new BusinessException("vendedor nao pertence a sua equipe");
         }
 
         vendedor.setEquipe(null);
         userRepository.save(vendedor);
     }
-
 
     public User getUsuarioAuthenticado() {
 
@@ -124,7 +118,7 @@ public class EquipeService {
         if (authentication == null ||
                 !(authentication.getPrincipal() instanceof User usuario)) {
 
-            throw new IllegalStateException("Não foi possivel identificar o usuario autenticado ");
+            throw new IllegalStateException("nao foi possivel identificar o usuario autenticado");
         }
 
         return usuario;
