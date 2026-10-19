@@ -10,15 +10,21 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "refresh_tokens")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "user")
 public class RefreshToken {
 
     @Id

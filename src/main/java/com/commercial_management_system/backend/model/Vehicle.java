@@ -15,15 +15,20 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.awt.*;
 import java.math.BigDecimal;
 
 @Entity
+@Getter
+@Setter
 @NoArgsConstructor
-@Data
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "brand")
 @Table(name = "vehicles")
 public class Vehicle {
 
@@ -34,10 +39,10 @@ public class Vehicle {
     @Column(name = "name", nullable = false)
     private String name;
 
-
     @Enumerated(EnumType.STRING)
     @Column(name = "color", nullable = false)
     private VehicleColor color;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type", nullable = false)
     private VehicleType vehicleType;
