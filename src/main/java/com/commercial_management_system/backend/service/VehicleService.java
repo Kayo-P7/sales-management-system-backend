@@ -13,7 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
-import static com.commercial_management_system.backend.specifications.SpecsVehicle.*;
+import com.commercial_management_system.backend.exception.ResourceNotFoundException;
+import static com.commercial_management_system.backend.specifications.SpecsVehicle.equalPreco;
+import static com.commercial_management_system.backend.specifications.SpecsVehicle.likeColor;
+import static com.commercial_management_system.backend.specifications.SpecsVehicle.likeNameBrand;
+import static com.commercial_management_system.backend.specifications.SpecsVehicle.nameVehicle;
 
 @Service
 public class VehicleService {
@@ -30,18 +34,14 @@ public class VehicleService {
     public VehicleResponse save(VehicleRegister vehicleRegister) {
 
         Vehicle vehicle = vehicleMapper.toVehicle(vehicleRegister);
-        vehicleRepository.save(vehicle);
-        return new VehicleResponse(vehicle.getName(),
-                vehicle.getColor(),
-                vehicle.getVehicleType(),
-                vehicle.getPrice(),
-                vehicle.getBrand().getId());
+        vehicle = vehicleRepository.save(vehicle);
+        return vehicleMapper.toVehicleResponse(vehicle);
     }
 
     @Transactional(readOnly = true)
     public VehicleResponse findById(Long id) {
-
-        Vehicle vehicle = vehicleRepository.findById(id).orElseThrow(() -> new RuntimeException("Not found"));
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("veiculo nao encontrado com id: " + id));
         return vehicleMapper.toVehicleResponse(vehicle);
     }
 
@@ -85,13 +85,16 @@ public class VehicleService {
 
     @Transactional
     public void deleteVehicleById(Long id) {
+        if (!vehicleRepository.existsById(id)) {
+            throw new ResourceNotFoundException("veiculo nao encontrado com id: " + id);
+        }
         vehicleRepository.deleteById(id);
     }
 
     @Transactional
     public VehicleResponse updateVehicle(Long id, VehicleRegister vehicleRegister) {
-        Vehicle vehicle = vehicleRepository
-                .findById(id).orElseThrow(() -> new RuntimeException("Id not found"));
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("veiculo nao encontrado com id: " + id));
 
         vehicleMapper.updateVehicle(vehicleRegister, vehicle);
         vehicleRepository.save(vehicle);
@@ -101,7 +104,8 @@ public class VehicleService {
 
     @Transactional
     public VehicleResponse updateVehicleBrand(Long id, VehicleRegister vehicleRegister) {
-        Vehicle vehicle = vehicleRepository.findById(id).orElseThrow(() -> new RuntimeException("Id not found"));
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("veiculo nao encontrado com id: " + id));
 
         vehicleMapper.updateVehicleBrand(vehicleRegister, vehicle);
 
