@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RateLimitService {
 
+    private static final int MAX_BUCKETS = 10_000;
+
     private final RateLimitProperties properties;
     private final MeterRegistry meterRegistry;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -35,6 +37,11 @@ public class RateLimitService {
         boolean rotaAuth = uri != null && uri.startsWith("/api/v1/auth");
         String chave = (rotaAuth ? "auth:" : "general:") + clientIp;
         RateLimitProperties.Policy policy = rotaAuth ? properties.getAuth() : properties.getGeneral();
+
+        // previne exaustao de heap descartando entradas antigas ao atingir o limite maximo
+        if (buckets.size() >= MAX_BUCKETS && !buckets.containsKey(chave)) {
+            buckets.clear();
+        }
 
         Bucket bucket = buckets.computeIfAbsent(chave, k -> criarBucket(policy));
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
