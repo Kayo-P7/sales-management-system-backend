@@ -15,7 +15,7 @@ public record VehicleResponse(
         @Schema(description = "nome ou modelo do veiculo", example = "Corolla")
         String name,
 
-        @Schema(description = "cor predominante do veiculo", example = "BLACK")
+        @Schema(description = "cor predominante do veiculo", example = "PRETO")
         VehicleColor color,
 
         @Schema(description = "tipo do veiculo", example = "CAR")
