@@ -28,10 +28,10 @@ public abstract class VehicleMapper {
     )
     public abstract Vehicle toVehicle(VehicleRegister vehicleRegister);
 
-    @Mapping(target = "brand", source = "brand.id")
+    @Mapping(target = "brandId", source = "brand.id")
     public abstract VehicleResponse toVehicleResponse(Vehicle vehicle);
 
-    @Mapping(target = "brand", source = "brand.id")
+    @Mapping(target = "brandId", source = "brand.id")
     public abstract VehicleResponse toVehicleResponseSpecs(Vehicle vehicle);
 
     public abstract void updateVehicle(VehicleRegister vehicleRegister, @MappingTarget Vehicle vehicle);
