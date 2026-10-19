@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Service
@@ -29,7 +28,7 @@ public class TokenService {
                 .subject(user.getUsername())
                 .issuer("sales-management-system-backend")
                 .claim("id", user.getId())
-                .claim("role", user.getUserType() != null ? user.getUserType().name() : "ROLE_USER")
+                .claim("role", user.getUserType() != null ? user.getUserType().name() : "ROLE_VENDEDOR")
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(Date.from(dataExpiracao()))
                 .signWith(getSigningKey())
@@ -50,8 +49,8 @@ public class TokenService {
         }
     }
 
-    // calcula data de expiracao em fuso horario de brasilia
+    // calcula instante de expiracao de forma agnostica a fuso horario
     private Instant dataExpiracao() {
-        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+        return Instant.now().plus(2, ChronoUnit.HOURS);
     }
 }
