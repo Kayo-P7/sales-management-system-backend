@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "equipe", description = "cadastrar equipe")
 @RestController
-@RequestMapping("/api/v1/equipe")
+@RequestMapping("/api/v1/equipes")
 
 public class EquipeController {
 
@@ -47,7 +48,7 @@ public class EquipeController {
     })
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     @PostMapping
-    public ResponseEntity<EquipeResponse> save(@RequestBody EquipeRequest equipeRequest) {
+    public ResponseEntity<EquipeResponse> save(@Valid @RequestBody EquipeRequest equipeRequest) {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
