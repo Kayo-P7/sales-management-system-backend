@@ -17,7 +17,7 @@ public record VehicleRegister(
         @Size(max = 255, message = "o nome deve ter no maximo 255 caracteres")
         String name,
 
-        @Schema(description = "cor do veiculo", example = "BLACK")
+        @Schema(description = "cor do veiculo", example = "PRETO")
         @NotNull(message = "a cor e obrigatoria")
         VehicleColor color,
 

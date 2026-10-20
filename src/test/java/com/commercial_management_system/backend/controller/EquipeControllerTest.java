@@ -53,7 +53,7 @@ class EquipeControllerTest {
         EquipeRequest request = new EquipeRequest("Equipe Vendas", List.of(2L));
         UserSummaryResponse sup = new UserSummaryResponse(1L, "Supervisor", "sup@example.com", "11988880000", UserType.ROLE_SUPERVISOR);
         UserSummaryResponse vend = new UserSummaryResponse(2L, "Vendedor", "vend@example.com", "11977770000", UserType.ROLE_VENDEDOR);
-        EquipeResponse response = new EquipeResponse(1L, List.of(vend), sup);
+        EquipeResponse response = new EquipeResponse(1L, "Equipe Vendas", List.of(vend), sup);
 
         when(equipeService.save(any(EquipeRequest.class))).thenReturn(response);
 
@@ -62,6 +62,7 @@ class EquipeControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Equipe Vendas"))
                 .andExpect(jsonPath("$.supervisor.id").value(1));
     }
 
@@ -70,13 +71,14 @@ class EquipeControllerTest {
     @DisplayName("deve buscar equipe do supervisor e retornar status 200")
     void deveBuscarEquipeDoSupervisorRetornando200() throws Exception {
         UserSummaryResponse sup = new UserSummaryResponse(1L, "Supervisor", "sup@example.com", "11988880000", UserType.ROLE_SUPERVISOR);
-        EquipeResponse response = new EquipeResponse(1L, List.of(), sup);
+        EquipeResponse response = new EquipeResponse(1L, "Equipe Vendas", List.of(), sup);
 
         when(equipeService.findAllBySupervisorId()).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/equipes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Equipe Vendas"));
     }
 
     // valida remocao de vendedor da equipe retornando status 204

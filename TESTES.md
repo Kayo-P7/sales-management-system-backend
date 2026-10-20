@@ -4,7 +4,7 @@ Este documento estabelece o padrão arquitetural, catálogo, cobertura e diretri
 
 ## 1. Avaliação do Estado Atual dos Testes
 
-A aplicação dispõe de uma suíte completa composta por **testes unitários** e **testes de integração**, totalizando **66 testes automatizados com 100% de sucesso**.
+A aplicação dispõe de uma suíte completa composta por **testes unitários** e **testes de integração**, totalizando **68 testes automatizados com 100% de sucesso**.
 
 ### 1.1 Testes Unitários
 Os testes unitários isolam a regra de negócio de qualquer dependência externa ou banco de dados, utilizando `Mockito` e `@ExtendWith(MockitoExtension.class)`:
@@ -32,7 +32,7 @@ Os testes de integração validam a interação entre componentes, filtros de se
   - `HealthControllerTest`: verificação do status de saúde da aplicação.
 - **Segurança e Ciclo de Vida de Autenticação:**
   - `AuthenticationRefreshIntegrationTest`: fluxo ponta a ponta de autenticação com geração de access token e refresh token, seguido pela rotação atômica via endpoint `/api/v1/auth/refresh`.
-  - `ActuatorSecurityTest`: proteção de endpoints administrativos (`/actuator`), garantindo exposição pública restrita ao health check básico e bloqueio de métricas para usuários não autenticados.
+  - `ActuatorSecurityTest`: proteção de endpoints administrativos (`/actuator`), bloqueio com 401 para rotas corporativas de veículos e usuários sem autenticação, e restrição de métricas para usuários não autenticados.
 - **Persistência e Concorrência Otimista (Slice JPA com H2):**
   - `ClienteRepositoryTest`: testes de slice com `@DataJpaTest` validando consultas customizadas por criador, paginação e filtros case-insensitive.
   - `BrandOptimisticLockingTest`: validação de lock otimista (`@Version`), garantindo que tentativas de alteração simultânea com versão defasada disparem `ObjectOptimisticLockingFailureException`.

@@ -80,7 +80,7 @@ class EquipeServiceTest {
 
         UserSummaryResponse sup = new UserSummaryResponse(10L, "Supervisor Teste", "sup@example.com", "11988880000", UserType.ROLE_SUPERVISOR);
         UserSummaryResponse vend = new UserSummaryResponse(20L, "Vendedor 1", "vendedor@example.com", "11977770000", UserType.ROLE_VENDEDOR);
-        EquipeResponse responseEsperada = new EquipeResponse(1L, List.of(vend), sup);
+        EquipeResponse responseEsperada = new EquipeResponse(1L, "Equipe Alpha", List.of(vend), sup);
 
         when(equipeRepository.existsBySupervisorId(10L)).thenReturn(false);
         when(equipeMapper.toEquipe(request)).thenReturn(equipe);
@@ -92,6 +92,7 @@ class EquipeServiceTest {
 
         assertNotNull(response);
         assertEquals(1L, response.id());
+        assertEquals("Equipe Alpha", response.nome());
         verify(userRepository).save(vendedor);
     }
 
@@ -114,7 +115,7 @@ class EquipeServiceTest {
         equipe.setId(1L);
         equipe.setNome("Equipe Alpha");
         UserSummaryResponse sup = new UserSummaryResponse(10L, "Supervisor Teste", "sup@example.com", "11988880000", UserType.ROLE_SUPERVISOR);
-        EquipeResponse responseEsperada = new EquipeResponse(1L, List.of(), sup);
+        EquipeResponse responseEsperada = new EquipeResponse(1L, "Equipe Alpha", List.of(), sup);
 
         when(equipeRepository.findAllBySupervisorId(10L)).thenReturn(Optional.of(equipe));
         when(equipeMapper.toEquipeResponse(equipe)).thenReturn(responseEsperada);
@@ -123,6 +124,7 @@ class EquipeServiceTest {
 
         assertNotNull(response);
         assertEquals(1L, response.id());
+        assertEquals("Equipe Alpha", response.nome());
     }
 
     // valida remocao de vendedor da equipe do supervisor

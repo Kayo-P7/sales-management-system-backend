@@ -561,7 +561,7 @@ Tokens expirados, inválidos ou revogados devem ser tratados pela configuração
 
 ## Testes
 
-A aplicação dispõe de uma suíte abrangente com **66 testes automatizados** e 100% de cobertura funcional aprovada. O catálogo detalhado, os cenários cobertos e as diretrizes de execução estão documentados em [`TESTES.md`](TESTES.md).
+A aplicação dispõe de uma suíte abrangente com **68 testes automatizados** e 100% de cobertura funcional aprovada. O catálogo detalhado, os cenários cobertos e as diretrizes de execução estão documentados em [`TESTES.md`](TESTES.md).
 
 Execute a suíte completa de testes com:
 
