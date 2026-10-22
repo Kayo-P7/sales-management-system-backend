@@ -27,8 +27,8 @@ services:
       dockerfile: Dockerfile
     container_name: sales-management-backend
     restart: unless-stopped
-    ports:
-      - "${SERVER_PORT:-8089}:${SERVER_PORT:-8089}"
+    expose:
+      - "${SERVER_PORT:-8089}"
     environment:
       SERVER_PORT: ${SERVER_PORT:-8089}
       DB_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-sales_management}
@@ -38,6 +38,19 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    networks:
+      - sales-network
+
+  proxy:
+    image: nginx:alpine
+    container_name: sales-management-proxy
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
     networks:
       - sales-network
 

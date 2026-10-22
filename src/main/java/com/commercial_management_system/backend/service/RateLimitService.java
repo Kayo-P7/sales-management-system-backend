@@ -1,31 +1,35 @@
 package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.config.RateLimitProperties;
-import io.micrometer.core.instrument.MeterRegistry;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class RateLimitService {
 
-    private static final int MAX_BUCKETS = 10_000;
-
     private final RateLimitProperties properties;
     private final MeterRegistry meterRegistry;
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets;
 
     public RateLimitService(RateLimitProperties properties, MeterRegistry meterRegistry) {
         this.properties = properties;
         this.meterRegistry = meterRegistry;
+        // configura cache em memoria com politica de expiracao por inatividade e capacidade maxima
+        this.buckets = Caffeine.newBuilder()
+                .maximumSize(50_000)
+                .expireAfterAccess(15, TimeUnit.MINUTES)
+                .build();
         // registra medicao continua de buckets ativos em memoria
-        meterRegistry.gauge("rate_limit_active_buckets", buckets, Map::size);
+        meterRegistry.gauge("rate_limit_active_buckets", this.buckets, b -> (double) b.estimatedSize());
     }
 
     // verifica e consome um token do bucket correspondente ao cliente
@@ -38,12 +42,7 @@ public class RateLimitService {
         String chave = (rotaAuth ? "auth:" : "general:") + clientIp;
         RateLimitProperties.Policy policy = rotaAuth ? properties.getAuth() : properties.getGeneral();
 
-        // previne exaustao de heap descartando entradas antigas ao atingir o limite maximo
-        if (buckets.size() >= MAX_BUCKETS && !buckets.containsKey(chave)) {
-            buckets.clear();
-        }
-
-        Bucket bucket = buckets.computeIfAbsent(chave, k -> criarBucket(policy));
+        Bucket bucket = buckets.get(chave, k -> criarBucket(policy));
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
         // registra metricas de requisicoes permitidas e rejeitadas
@@ -59,17 +58,23 @@ public class RateLimitService {
         return properties.isEnabled();
     }
 
-    // extrai o ip real do cliente considerando cabecalhos de proxy reverso
+    // extrai o ip real do cliente considerando o proxy reverso e cabecalhos sanitizados
     public String extrairIpCliente(HttpServletRequest request) {
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isBlank()) {
+            return xRealIp.trim();
+        }
+
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isBlank()) {
             return xForwardedFor.split(",")[0].trim();
         }
+
         String remoteAddr = request.getRemoteAddr();
         return (remoteAddr != null && !remoteAddr.isBlank()) ? remoteAddr : "unknown";
     }
 
-    // controi um novo bucket com base na politica configurada
+    // constroi um novo bucket com base na politica configurada
     private Bucket criarBucket(RateLimitProperties.Policy policy) {
         Bandwidth limite = Bandwidth.builder()
                 .capacity(policy.getCapacity())
@@ -81,8 +86,8 @@ public class RateLimitService {
                 .build();
     }
 
-    // limpa o mapa de buckets em memoria para fins de teste
+    // limpa o cache de buckets em memoria para fins de teste
     public void limparBuckets() {
-        buckets.clear();
+        buckets.invalidateAll();
     }
 }
