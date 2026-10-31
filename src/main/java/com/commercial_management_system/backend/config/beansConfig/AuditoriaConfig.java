@@ -14,7 +14,7 @@ public class AuditoriaConfig {
 
 
     @Bean
-    //informa ao Spring que o responsável pela auditoria será representado por uma String
+    //informa ao Spring que o responsável pela auditoria será representado por um Long
     public AuditorAware<Long> auditorAware(){
         /*
         *  @CreatedBy

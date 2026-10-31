@@ -15,6 +15,7 @@ A aplicação oferece autenticação e autorização de usuários, gerenciamento
 - [Autenticação e autorização](#autenticação-e-autorização)
 - [Gerenciamento de usuários e equipes](#gerenciamento-de-usuários-e-equipes)
 - [Gerenciamento de clientes](#gerenciamento-de-clientes)
+- [Registros diários](#registros-diários)
 - [Gerenciamento de veículos e marcas](#gerenciamento-de-veículos-e-marcas)
 - [Versionamento do banco de dados](#versionamento-do-banco-de-dados)
 - [Auditoria](#auditoria)
@@ -85,7 +86,77 @@ As regras de negócio preveem que vendedores gerenciem seus próprios clientes, 
 
 Essas permissões devem ser aplicadas pelo backend, por meio das regras de negócio e das consultas ao banco, e não somente pela interface do frontend.
 
-### Gerenciamento de veículos e marcas
+### Registros diários de vendas
+
+- Cadastro e atualização dos indicadores diários de cada vendedor.
+- Registro de pendências novas, ligações, negociações, agendamentos, chamadas de vídeo, clientes em loja, fechamentos e anúncios.
+- Associação do registro ao vendedor autenticado.
+- Restrição de um registro por vendedor em cada data.
+- Validação para impedir valores negativos nas métricas.
+- Vendedores gerenciam os próprios registros; supervisores consultam os registros dos vendedores da própria equipe; administradores possuem acesso geral de consulta.
+
+### Registros diários
+
+O recurso permite acompanhar indicadores diários de atividade e desempenho dos vendedores.
+
+### Modelo de dados
+
+Cada registro está associado a um vendedor e a uma data. A tabela `registro_diario` possui uma restrição única para a combinação de vendedor e data, impedindo mais de um registro para o mesmo vendedor no mesmo dia.
+
+Os campos de métricas são inteiros, podem ficar sem valor quando não houver informação e, quando preenchidos, devem ser maiores ou iguais a zero.
+
+### Campos do registro
+
+| Campo | Descrição |
+|---|---|
+| `pendenciasNovas` | Quantidade de novas pendências |
+| `ligacoes` | Quantidade de ligações |
+| `negociacoes` | Quantidade de negociações |
+| `agendamentos` | Quantidade de agendamentos |
+| `chamadasVideo` | Quantidade de chamadas de vídeo |
+| `clientesEmLoja` | Quantidade de clientes atendidos na loja |
+| `fechamentos` | Quantidade de fechamentos |
+| `anuncios` | Quantidade de anúncios |
+
+A data e o vendedor são definidos pelo backend conforme a implementação do endpoint e o usuário autenticado. O cliente da API não deve atribuir o registro a outro vendedor enviando um identificador arbitrário.
+
+### Exemplo de requisição
+
+```json
+{
+  "pendenciasNovas": 5,
+  "ligacoes": 20,
+  "negociacoes": 8,
+  "agendamentos": 4,
+  "chamadasVideo": 3,
+  "clientesEmLoja": 6,
+  "fechamentos": 2,
+  "anuncios": 10
+}
+```
+
+Envie o token JWT no cabeçalho:
+
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+Consulte o Swagger UI para confirmar o caminho exato do endpoint, seus parâmetros e o formato da resposta.
+
+### Regras de acesso
+
+| Papel | Permissões |
+|---|---|
+| `ROLE_VENDEDOR` | Cadastra e atualiza os próprios registros e consulta os próprios dados |
+| `ROLE_SUPERVISOR` | Consulta os registros dos vendedores vinculados à sua equipe |
+| `ROLE_ADMIN` | Consulta os registros de todos os vendedores |
+
+As regras de escopo devem ser aplicadas no backend. O vendedor deve ser identificado pelo contexto de segurança, e supervisores não devem consultar registros de equipes às quais não pertencem.
+
+---
+
+## Gerenciamento de veículos e marcas
 
 - Cadastro, consulta e listagem de veículos.
 - Pesquisa e filtragem de veículos.
@@ -316,6 +387,67 @@ Consulte o Swagger UI para conferir os caminhos exatos, parâmetros e formatos d
 
 ---
 
+## Registros diários
+
+O recurso permite acompanhar indicadores diários de atividade e desempenho dos vendedores.
+
+### Modelo de dados
+
+Cada registro está associado a um vendedor e a uma data. A tabela `registro_diario` possui uma restrição única para a combinação de vendedor e data, impedindo mais de um registro para o mesmo vendedor no mesmo dia.
+
+Os campos de métricas são inteiros, podem ficar sem valor quando não houver informação e, quando preenchidos, devem ser maiores ou iguais a zero.
+
+### Campos do registro
+
+| Campo | Descrição |
+|---|---|
+| `pendenciasNovas` | Quantidade de novas pendências |
+| `ligacoes` | Quantidade de ligações |
+| `negociacoes` | Quantidade de negociações |
+| `agendamentos` | Quantidade de agendamentos |
+| `chamadasVideo` | Quantidade de chamadas de vídeo |
+| `clientesEmLoja` | Quantidade de clientes atendidos na loja |
+| `fechamentos` | Quantidade de fechamentos |
+| `anuncios` | Quantidade de anúncios |
+
+A data e o vendedor são definidos pelo backend conforme a implementação do endpoint e o usuário autenticado. O cliente da API não deve atribuir o registro a outro vendedor enviando um identificador arbitrário.
+
+### Exemplo de requisição
+
+```json
+{
+  "pendenciasNovas": 5,
+  "ligacoes": 20,
+  "negociacoes": 8,
+  "agendamentos": 4,
+  "chamadasVideo": 3,
+  "clientesEmLoja": 6,
+  "fechamentos": 2,
+  "anuncios": 10
+}
+```
+
+Envie o token JWT no cabeçalho:
+
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+Consulte o Swagger UI para confirmar o caminho exato do endpoint, seus parâmetros e o formato da resposta.
+
+### Regras de acesso
+
+| Papel | Permissões |
+|---|---|
+| `ROLE_VENDEDOR` | Cadastra e atualiza os próprios registros e consulta os próprios dados |
+| `ROLE_SUPERVISOR` | Consulta os registros dos vendedores vinculados à sua equipe |
+| `ROLE_ADMIN` | Consulta os registros de todos os vendedores |
+
+As regras de escopo devem ser aplicadas no backend. O vendedor deve ser identificado pelo contexto de segurança, e supervisores não devem consultar registros de equipes às quais não pertencem.
+
+---
+
 ## Gerenciamento de veículos e marcas
 
 A API disponibiliza operações para gerenciamento de veículos e marcas.
@@ -376,9 +508,10 @@ Exemplos:
 V1__create_initial_schema.sql
 V2__add_new_column_to_users.sql
 V4__create_equipe_and_update_users.sql
+V5__create_registro_diario.sql
 ```
 
-Os nomes acima são exemplos de convenção. As migrations efetivamente presentes no repositório definem as versões utilizadas pelo projeto.
+As migrations atuais incluem `V4__create_equipe_and_update_users.sql`, responsável pela estrutura de equipes e pelos papéis de usuário, e `V5__create_registro_diario.sql`, responsável pela tabela de registros diários. Consulte o diretório para verificar a sequência completa e atualizada.
 
 ### Como criar uma migration
 
@@ -591,6 +724,7 @@ Os caminhos abaixo servem como referência durante o desenvolvimento. A disponib
 | Renovação de token | `POST /api/v1/auth/refresh` |
 | Logout | `POST /api/v1/auth/logout` |
 | Gerenciamento de clientes | `/api/v1/clientes` |
+| Registros diários | Consulte a rota configurada no Swagger UI |
 | Gerenciamento de equipes | `/api/v1/equipes` |
 | Gerenciamento de veículos | `/api/v1/vehicles` |
 | Gerenciamento de marcas | `/api/v1/brands` |
