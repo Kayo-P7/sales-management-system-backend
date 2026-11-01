@@ -113,4 +113,7 @@ public class RegistroDiarioService {
 
         return registroDiarioMapper.toRegistroDiarioResponse(registro);
     }
+
+
+
 }
