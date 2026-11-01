@@ -30,4 +30,6 @@ public interface RegistroDiarioRepository
     List<RegistroDiario> findAllBySupervisorId(
             @Param("supervisorId") Long supervisorId
     );
+
+   Optional<RegistroDiario> findByVendedor_IdAndId(Long idVendedor, Long idTarefa);
 }
