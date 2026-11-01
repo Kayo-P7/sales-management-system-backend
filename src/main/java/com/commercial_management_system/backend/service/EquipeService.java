@@ -3,6 +3,7 @@ package com.commercial_management_system.backend.service;
 import com.commercial_management_system.backend.dto.equipe.AddVendedorRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeResponse;
+import com.commercial_management_system.backend.dto.equipe.EquipeResponsePage;
 import com.commercial_management_system.backend.enums.UserType;
 import com.commercial_management_system.backend.exception.BusinessException;
 import com.commercial_management_system.backend.exception.ResourceNotFoundException;
@@ -11,6 +12,9 @@ import com.commercial_management_system.backend.model.Equipe;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.EquipeRepository;
 import com.commercial_management_system.backend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -164,5 +168,20 @@ public class EquipeService {
         equipe.getVendedores().add(vendedor);
 
         return equipeMapper.toEquipeResponse(equipe);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EquipeResponsePage> findAllEquipes(Pageable pageable) {
+        User administrador_supervisor = getUsuarioAuthenticado();
+
+
+        if (administrador_supervisor.getUserType() != UserType.ROLE_ADMIN
+                && administrador_supervisor.getUserType() != UserType.ROLE_SUPERVISOR) {
+
+            throw new AccessDeniedException("Você não tem acesso a esse endpoint");
+        }
+        Page<Equipe> equipe = equipeRepository.findAll(pageable);
+
+        return equipe.map(equipeMapper::toPageEquipeResponse);
     }
 }
