@@ -155,4 +155,24 @@ public class RegistroDiarioController {
                 registroDiarioService.buscarMeuRegistroPorData(data)
         );
     }
+
+    @Operation(
+            summary = "Excluir registro diário",
+            description = "Permite que um vendedor exclua um registro diário de sua propriedade."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Registro diário excluído com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Usuário não autenticado"),
+            @ApiResponse(responseCode = "403", description = "Usuário não possui permissão para realizar essa operação"),
+            @ApiResponse(responseCode = "404", description = "Registro diário não encontrado ou não pertence ao vendedor autenticado")
+    })
+    @DeleteMapping("/{idTarefa}")
+    @PreAuthorize("hasRole('VENDEDOR')")
+    public ResponseEntity<Void> deleteRegistroDiario(
+            @Parameter(description = "ID do registro diário que será excluído", example = "1")
+            @PathVariable Long idTarefa
+    ) {
+        registroDiarioService.deleteRegistroDiario(idTarefa);
+        return ResponseEntity.noContent().build();
+    }
 }

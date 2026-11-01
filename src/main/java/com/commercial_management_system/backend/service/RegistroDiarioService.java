@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -113,4 +114,26 @@ public class RegistroDiarioService {
 
         return registroDiarioMapper.toRegistroDiarioResponse(registro);
     }
+<<<<<<< HEAD
+=======
+
+
+    public void deleteRegistroDiario(Long idTarefa){
+        User usuario = getUsuarioAutenticado();
+
+
+        if(usuario.getUserType() != UserType.ROLE_VENDEDOR){
+            throw new AccessDeniedException("Voce nao pode acessar esse recurso");
+        }
+
+        RegistroDiario registroDiario = registroDiarioRepository
+                .findByVendedor_IdAndId(usuario.getId(), idTarefa)
+                .orElseThrow(() -> new RuntimeException("voce nao e dono dessa tarefa"));
+
+
+        registroDiarioRepository.deleteById(registroDiario.getId());
+
+    }
+
+>>>>>>> b22d654 (feat: implementar exclusão de registro diário)
 }
