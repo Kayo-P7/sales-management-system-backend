@@ -115,6 +115,7 @@ public class RegistroDiarioService {
         return registroDiarioMapper.toRegistroDiarioResponse(registro);
     }
 
+
     public void deleteRegistroDiario(Long idTarefa){
         User usuario = getUsuarioAutenticado();
 
@@ -131,5 +132,6 @@ public class RegistroDiarioService {
         registroDiarioRepository.deleteById(registroDiario.getId());
 
     }
+
 
 }
