@@ -1,6 +1,7 @@
 package com.commercial_management_system.backend.controller;
 
 
+import com.commercial_management_system.backend.dto.equipe.AddVendedorRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeResponse;
 import com.commercial_management_system.backend.dto.erro.ErroResponse;
@@ -115,5 +116,46 @@ public class EquipeController {
 
         equipeService.deleteByVendedor(id);
         return ResponseEntity.noContent().build();
+    }
+
+
+    @Operation(
+            summary = "Adicionar vendedor à equipe",
+            description = "Adiciona um vendedor à equipe do supervisor autenticado."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Vendedor adicionado à equipe com sucesso"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "O usuário informado não é vendedor ou já pertence a uma equipe"
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Apenas supervisores podem adicionar vendedores"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Vendedor ou equipe não encontrado"
+            )
+    })
+    @PostMapping("/vendedores")
+    @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
+    public ResponseEntity<EquipeResponse> addVendedorAEquipe(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Dados do vendedor que será adicionado à equipe",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = AddVendedorRequest.class)
+                    )
+            )
+            @RequestBody
+            @Valid AddVendedorRequest request
+    ) {
+        return ResponseEntity.ok(
+                equipeService.addVendedorAEquipe(request)
+        );
     }
 }

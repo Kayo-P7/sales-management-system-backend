@@ -1,5 +1,6 @@
 package com.commercial_management_system.backend.service;
 
+import com.commercial_management_system.backend.dto.equipe.AddVendedorRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeRequest;
 import com.commercial_management_system.backend.dto.equipe.EquipeResponse;
 import com.commercial_management_system.backend.enums.UserType;
@@ -15,6 +16,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class EquipeService {
 
@@ -29,6 +32,18 @@ public class EquipeService {
         this.equipeMapper = equipeMapper;
     }
 
+    public User getUsuarioAuthenticado() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null ||
+                !(authentication.getPrincipal() instanceof User usuario)) {
+
+            throw new IllegalStateException("nao foi possivel identificar o usuario autenticado");
+        }
+
+        return usuario;
+    }
 
     @Transactional
     public EquipeResponse save(EquipeRequest equipeRequest) {
@@ -111,16 +126,43 @@ public class EquipeService {
         userRepository.save(vendedor);
     }
 
-    public User getUsuarioAuthenticado() {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    @Transactional
+    public EquipeResponse addVendedorAEquipe(AddVendedorRequest request) {
 
-        if (authentication == null ||
-                !(authentication.getPrincipal() instanceof User usuario)) {
+        User supervisor = getUsuarioAuthenticado();
 
-            throw new IllegalStateException("nao foi possivel identificar o usuario autenticado");
+        if (supervisor.getUserType() != UserType.ROLE_SUPERVISOR) {
+            throw new BusinessException(
+                    "Apenas supervisores podem adicionar vendedores"
+            );
         }
 
-        return usuario;
+        Equipe equipe = equipeRepository.findAllBySupervisorId(supervisor.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Equipe nao encontrada"
+                ));
+
+        User vendedor = userRepository.findById(request.idVendedor())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Vendedor nao encontrado"
+                ));
+
+        if (vendedor.getUserType() != UserType.ROLE_VENDEDOR) {
+            throw new BusinessException(
+                    "O usuario informado nao e um vendedor"
+            );
+        }
+
+        if (vendedor.getEquipe() != null) {
+            throw new BusinessException(
+                    "O vendedor ja pertence a uma equipe"
+            );
+        }
+
+        vendedor.setEquipe(equipe);
+        equipe.getVendedores().add(vendedor);
+
+        return equipeMapper.toEquipeResponse(equipe);
     }
 }
