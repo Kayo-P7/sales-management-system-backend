@@ -114,9 +114,6 @@ public class RegistroDiarioService {
 
         return registroDiarioMapper.toRegistroDiarioResponse(registro);
     }
-<<<<<<< HEAD
-=======
-
 
     public void deleteRegistroDiario(Long idTarefa){
         User usuario = getUsuarioAutenticado();
@@ -135,5 +132,4 @@ public class RegistroDiarioService {
 
     }
 
->>>>>>> b22d654 (feat: implementar exclusão de registro diário)
 }
