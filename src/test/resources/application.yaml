@@ -16,7 +16,7 @@ spring:
     enabled: false
 
 cors:
-  allowed-origins: http://localhost:4200,http://localhost:3000
+  allowed-origins: http://localhost:4200
 
 api:
   security:
