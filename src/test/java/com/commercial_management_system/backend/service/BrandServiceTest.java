@@ -3,6 +3,7 @@ package com.commercial_management_system.backend.service;
 import com.commercial_management_system.backend.dto.brand.BrandRequest;
 import com.commercial_management_system.backend.dto.brand.BrandResponse;
 import com.commercial_management_system.backend.exception.ResourceNotFoundException;
+import com.commercial_management_system.backend.mapper.BrandMapper;
 import com.commercial_management_system.backend.model.Brand;
 import com.commercial_management_system.backend.repository.BrandRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,9 @@ class BrandServiceTest {
     @Mock
     private BrandRepository brandRepository;
 
+    @Mock
+    private BrandMapper brandMapper;
+
     @InjectMocks
     private BrandService brandService;
 
@@ -39,8 +43,11 @@ class BrandServiceTest {
         Brand brand = new Brand();
         brand.setId(1L);
         brand.setName("Toyota");
+        BrandResponse responseEsperada = new BrandResponse(1L, "Toyota");
 
+        when(brandMapper.toBrand(request)).thenReturn(brand);
         when(brandRepository.save(any(Brand.class))).thenReturn(brand);
+        when(brandMapper.toBrandResponse(brand)).thenReturn(responseEsperada);
 
         BrandResponse response = brandService.salvar(request);
 
@@ -56,8 +63,10 @@ class BrandServiceTest {
         Brand brand = new Brand();
         brand.setId(1L);
         brand.setName("Honda");
+        BrandResponse responseEsperada = new BrandResponse(1L, "Honda");
 
         when(brandRepository.findAll()).thenReturn(List.of(brand));
+        when(brandMapper.toBrandResponse(brand)).thenReturn(responseEsperada);
 
         List<BrandResponse> resultado = brandService.listarTodos();
 
@@ -74,8 +83,10 @@ class BrandServiceTest {
         Brand brand = new Brand();
         brand.setId(1L);
         brand.setName("Ford");
+        BrandResponse responseEsperada = new BrandResponse(1L, "Ford");
 
         when(brandRepository.findById(1L)).thenReturn(Optional.of(brand));
+        when(brandMapper.toBrandResponse(brand)).thenReturn(responseEsperada);
 
         BrandResponse response = brandService.buscarPorId(1L);
 

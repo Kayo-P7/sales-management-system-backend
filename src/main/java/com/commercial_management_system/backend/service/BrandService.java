@@ -3,6 +3,7 @@ package com.commercial_management_system.backend.service;
 import com.commercial_management_system.backend.dto.brand.BrandRequest;
 import com.commercial_management_system.backend.dto.brand.BrandResponse;
 import com.commercial_management_system.backend.exception.ResourceNotFoundException;
+import com.commercial_management_system.backend.mapper.BrandMapper;
 import com.commercial_management_system.backend.model.Brand;
 import com.commercial_management_system.backend.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,22 +17,21 @@ import java.util.List;
 public class BrandService {
 
     private final BrandRepository brandRepository;
+    private final BrandMapper brandMapper;
 
     // cadastra uma nova marca de veiculo
     @Transactional
     public BrandResponse salvar(BrandRequest request) {
-        Brand brand = new Brand();
-        brand.setName(request.name());
-
+        Brand brand = brandMapper.toBrand(request);
         brandRepository.save(brand);
-        return BrandResponse.from(brand);
+        return brandMapper.toBrandResponse(brand);
     }
 
     // lista todas as marcas cadastradas
     @Transactional(readOnly = true)
     public List<BrandResponse> listarTodos() {
         return brandRepository.findAll().stream()
-                .map(BrandResponse::from)
+                .map(brandMapper::toBrandResponse)
                 .toList();
     }
 
@@ -40,6 +40,6 @@ public class BrandService {
     public BrandResponse buscarPorId(Long id) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("marca nao encontrada"));
-        return BrandResponse.from(brand);
+        return brandMapper.toBrandResponse(brand);
     }
 }

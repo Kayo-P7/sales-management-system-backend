@@ -5,6 +5,7 @@ import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
 import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
+import com.commercial_management_system.backend.mapper.UserMapper;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -21,9 +22,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -33,6 +38,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UserMapper userMapper;
 
     @InjectMocks
     private UserService userService;
@@ -48,9 +56,15 @@ class UserServiceTest {
                 "senha123",
                 UserType.ROLE_ADMIN
         );
+        User user = new User();
+        user.setName(request.name());
+        user.setEmail(request.email());
+        user.setTelephone(request.telephone());
+        user.setUserType(request.userType());
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(userRepository.existsByTelephone(request.telephone())).thenReturn(false);
+        when(userMapper.toUser(request)).thenReturn(user);
         when(passwordEncoder.encode("senha123")).thenReturn("hash_criptografado");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -88,8 +102,10 @@ class UserServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         User user = new User("Carlos", "carlos@example.com", "11977776666", "hash", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
         Page<User> page = new PageImpl<>(List.of(user));
+        UserResponse responseEsperada = new UserResponse(1L, "Carlos", "carlos@example.com", "11977776666", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
 
         when(userRepository.findAll(pageable)).thenReturn(page);
+        when(userMapper.toUserResponse(user)).thenReturn(responseEsperada);
 
         Page<UserResponse> resultado = userService.listar(null, pageable);
 
