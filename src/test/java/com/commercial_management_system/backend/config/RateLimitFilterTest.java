@@ -35,6 +35,7 @@ class RateLimitFilterTest {
     @BeforeEach
     void setUp() {
         RateLimitProperties properties = new RateLimitProperties();
+        properties.setEnabled(true);
         properties.setAuth(new RateLimitProperties.Policy(2, 2, 60));
         properties.setGeneral(new RateLimitProperties.Policy(5, 5, 60));
 

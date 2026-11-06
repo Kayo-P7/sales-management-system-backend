@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8089}
+  port: ${SERVER_PORT}
   forward-headers-strategy: framework
 
 spring:
@@ -22,30 +22,29 @@ spring:
       hibernate:
         format_sql: true
   flyway:
-    enabled: ${FLYWAY_ENABLED:true}
-    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
-    baseline-version: ${FLYWAY_BASELINE_VERSION:1}
+    enabled: ${FLYWAY_ENABLED}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE}
+    baseline-version: ${FLYWAY_BASELINE_VERSION}
     baseline-description: "baseline_inicial"
     locations: classpath:db/migration
 
-
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 api:
   security:
     token:
-      secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      secret: ${JWT_SECRET}
   rate-limit:
-    enabled: ${RATE_LIMIT_ENABLED:true}
+    enabled: ${RATE_LIMIT_ENABLED}
     auth:
-      capacity: ${RATE_LIMIT_AUTH_CAPACITY:10}
-      refill-tokens: ${RATE_LIMIT_AUTH_REFILL_TOKENS:10}
-      refill-duration-in-seconds: ${RATE_LIMIT_AUTH_DURATION:60}
+      capacity: ${RATE_LIMIT_AUTH_CAPACITY}
+      refill-tokens: ${RATE_LIMIT_AUTH_REFILL_TOKENS}
+      refill-duration-in-seconds: ${RATE_LIMIT_AUTH_DURATION}
     general:
-      capacity: ${RATE_LIMIT_GENERAL_CAPACITY:60}
-      refill-tokens: ${RATE_LIMIT_GENERAL_REFILL_TOKENS:60}
-      refill-duration-in-seconds: ${RATE_LIMIT_GENERAL_DURATION:60}
+      capacity: ${RATE_LIMIT_GENERAL_CAPACITY}
+      refill-tokens: ${RATE_LIMIT_GENERAL_REFILL_TOKENS}
+      refill-duration-in-seconds: ${RATE_LIMIT_GENERAL_DURATION}
 
 logging:
   pattern:

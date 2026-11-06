@@ -15,6 +15,8 @@ spring:
   flyway:
     enabled: false
 
+cors:
+  allowed-origins: http://localhost:4200,http://localhost:3000
 
 api:
   security:

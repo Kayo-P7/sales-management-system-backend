@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -43,7 +44,9 @@ class EquipeControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(equipeController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(equipeController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .build();
     }
 
     // valida cadastro de equipe retornando status 201
@@ -75,7 +78,7 @@ class EquipeControllerTest {
 
         when(equipeService.findAllBySupervisorId()).thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/equipes"))
+        mockMvc.perform(get("/api/v1/equipes/supervisor"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nome").value("Equipe Vendas"));

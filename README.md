@@ -46,7 +46,6 @@ A aplicação oferece autenticação e autorização de usuários, gerenciamento
 | Micrometer | Coleta de métricas |
 | SLF4J MDC | Rastreamento de requisições nos logs |
 | Maven | Gerenciamento de dependências e build |
-| Docker Compose | Execução dos serviços em containers |
 
 ## Funcionalidades
 
@@ -180,9 +179,8 @@ As regras de escopo devem ser aplicadas no backend. O vendedor deve ser identifi
 ## Pré-requisitos
 
 - Java JDK 17 ou superior.
-- Docker e Docker Compose para executar o ambiente em containers.
 - Maven, caso não utilize o Maven Wrapper incluído no projeto.
-- PostgreSQL, caso opte por executar o banco fora do Docker.
+- PostgreSQL 16 ou superior instalado e em execução.
 
 ## Configuração do ambiente
 
@@ -192,43 +190,13 @@ Crie o arquivo de variáveis de ambiente a partir do modelo:
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` para configurar as credenciais do banco, as portas, o segredo JWT e as origens permitidas para requisições cross-origin (`CORS_ALLOWED_ORIGINS`), de acordo com as variáveis utilizadas pela aplicação.
+Edite o arquivo `.env` para configurar as credenciais do banco, as portas, o segredo JWT e as origens permitidas para requisições cross-origin (`CORS_ALLOWED_ORIGINS`), de acordo com as variáveis utilizadas pela aplicação. Todos os valores de configuração devem ser preenchidos diretamente no arquivo `.env`.
 
 **Não envie credenciais reais, senhas ou segredos JWT para o repositório.** O arquivo `.env` deve permanecer fora do controle de versão quando contiver informações sensíveis.
 
-Confira se as variáveis utilizadas pelo Docker Compose correspondem às configurações do Spring Boot.
-
 ## Como executar
 
-### 1. Execução com Docker Compose
-
-Construa as imagens e inicie os serviços:
-
-```bash
-docker compose up -d --build
-```
-
-Acompanhe os logs do backend:
-
-```bash
-docker compose logs -f backend
-```
-
-Encerre os serviços:
-
-```bash
-docker compose down
-```
-
-A API estará disponível na porta configurada no Docker Compose e no arquivo de ambiente.
-
-### 2. Execução local
-
-Inicie o PostgreSQL:
-
-```bash
-docker compose up -d database
-```
+Certifique-se de que o banco de dados PostgreSQL esteja ativo e com a base de dados criada de acordo com a variável `DB_URL` configurada no `.env`.
 
 Execute a aplicação com o Maven Wrapper:
 
@@ -244,7 +212,7 @@ Para iniciar a aplicação sem executar os testes primeiro:
 
 Esse comando ignora a execução dos testes, mas ainda realiza a compilação do código.
 
-Verifique a porta configurada na aplicação antes de acessar a API.
+Verifique a porta configurada na aplicação (`SERVER_PORT` no `.env`) antes de acessar a API.
 
 ---
 

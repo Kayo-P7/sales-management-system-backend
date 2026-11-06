@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Configuration;
 public class RateLimitProperties {
 
     // habilita ou desabilita o mecanismo de rate limit globalmente
-    private boolean enabled = true;
+    private boolean enabled;
 
     // politica de rate limit para rotas de autenticacao
-    private Policy auth = new Policy(10, 10, 60);
+    private Policy auth = new Policy();
 
     // politica de rate limit para rotas gerais da api
-    private Policy general = new Policy(60, 60, 60);
+    private Policy general = new Policy();
 
     @Getter
     @Setter
