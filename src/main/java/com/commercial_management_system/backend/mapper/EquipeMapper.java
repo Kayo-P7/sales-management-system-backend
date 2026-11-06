@@ -8,19 +8,20 @@ import com.commercial_management_system.backend.model.Equipe;
 import com.commercial_management_system.backend.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.springframework.data.domain.Page;
 
-@Mapper(componentModel = "spring")
-public abstract class EquipeMapper {
+@Mapper(config = GlobalMapperConfig.class)
+public interface EquipeMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "supervisor", ignore = true)
+    // converte requisicao em entidade ignorando associacoes manuais de usuarios
     @Mapping(target = "vendedores", ignore = true)
-    public abstract Equipe toEquipe(EquipeRequest request);
+    Equipe toEquipe(EquipeRequest request);
 
-    public abstract EquipeResponse toEquipeResponse(Equipe equipe);
+    // converte entidade equipe em dto de resposta detalhada
+    EquipeResponse toEquipeResponse(Equipe equipe);
 
-    public abstract UserSummaryResponse toUserSummaryResponse(User user);
+    // converte usuario em dto resumido
+    UserSummaryResponse toUserSummaryResponse(User user);
 
-    public abstract EquipeResponsePage toPageEquipeResponse(Equipe equipe);
+    // converte equipe em dto resumido de paginacao
+    EquipeResponsePage toEquipeResponsePage(Equipe equipe);
 }

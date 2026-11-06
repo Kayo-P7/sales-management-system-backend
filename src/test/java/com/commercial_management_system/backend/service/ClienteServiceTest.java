@@ -76,7 +76,7 @@ class ClienteServiceTest {
 
         when(clienteMapper.toCliente(request)).thenReturn(cliente);
         when(clienteRepository.save(cliente)).thenReturn(cliente);
-        when(clienteMapper.toClientResponse(cliente)).thenReturn(responseEsperada);
+        when(clienteMapper.toClienteResponse(cliente)).thenReturn(responseEsperada);
 
         ClienteResponse response = clienteService.save(request);
 
@@ -94,7 +94,7 @@ class ClienteServiceTest {
         ClienteResponse responseEsperada = new ClienteResponse(1L, "Maria", "11999991111", "maria@example.com", null, LocalDateTime.now(), null, "10", null);
 
         when(clienteRepository.findByIdAndCreatedBy(1L, 10L)).thenReturn(Optional.of(cliente));
-        when(clienteMapper.toClientResponse(cliente)).thenReturn(responseEsperada);
+        when(clienteMapper.toClienteResponse(cliente)).thenReturn(responseEsperada);
 
         ClienteResponse response = clienteService.findById(1L);
 
@@ -137,7 +137,7 @@ class ClienteServiceTest {
         ClienteResponse responseEsperada = new ClienteResponse(1L, "Carlos", "11999992222", "carlos@example.com", null, LocalDateTime.now(), null, "10", null);
 
         when(clienteRepository.findAllByCreatedBy(10L, pageable)).thenReturn(pagina);
-        when(clienteMapper.toClientResponse(cliente)).thenReturn(responseEsperada);
+        when(clienteMapper.toClienteResponse(cliente)).thenReturn(responseEsperada);
 
         Page<ClienteResponse> resultado = clienteService.listarClientes(pageable);
 

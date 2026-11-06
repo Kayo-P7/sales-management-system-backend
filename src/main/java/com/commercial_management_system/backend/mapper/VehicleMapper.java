@@ -7,19 +7,16 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
+@Mapper(config = GlobalMapperConfig.class)
 public interface VehicleMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "brand", ignore = true)
+    // converte dados de cadastro em entidade veiculo
     Vehicle toVehicle(VehicleRegister vehicleRegister);
 
+    // converte entidade veiculo em dto de resposta mapeando identificador da marca
     @Mapping(target = "brandId", source = "brand.id")
     VehicleResponse toVehicleResponse(Vehicle vehicle);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "brand", ignore = true)
+    // atualiza atributos da entidade veiculo a partir do dto de registro
     void updateVehicle(VehicleRegister vehicleRegister, @MappingTarget Vehicle vehicle);
 }
