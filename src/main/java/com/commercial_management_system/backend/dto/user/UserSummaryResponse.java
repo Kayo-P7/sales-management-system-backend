@@ -1,7 +1,6 @@
 package com.commercial_management_system.backend.dto.user;
 
 import com.commercial_management_system.backend.enums.UserType;
-import com.commercial_management_system.backend.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "resumo publico de dados do usuario")
@@ -21,16 +20,4 @@ public record UserSummaryResponse(
         @Schema(description = "perfil de acesso", example = "ROLE_VENDEDOR")
         UserType userType
 ) {
-    public static UserSummaryResponse from(User user) {
-        if (user == null) {
-            return null;
-        }
-        return new UserSummaryResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getTelephone(),
-                user.getUserType()
-        );
-    }
 }
