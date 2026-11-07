@@ -68,13 +68,20 @@ class UserServiceTest {
         when(passwordEncoder.encode("senha123")).thenReturn("hash_criptografado");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User resultado = userService.salvar(request);
+        UserResponse responseEsperada = new UserResponse(1L, "João Silva", "joao@example.com", "11999998888", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
+        when(userMapper.toUserResponse(user)).thenReturn(responseEsperada);
+
+        UserResponse resultado = userService.salvar(request);
 
         assertNotNull(resultado);
-        assertEquals("hash_criptografado", resultado.getPassword());
-        assertEquals(UserStatus.ACTIVE, resultado.getUserStatus());
+        assertEquals(1L, resultado.id());
+        assertEquals("João Silva", resultado.name());
+        assertEquals("joao@example.com", resultado.email());
+        assertEquals(UserType.ROLE_ADMIN, resultado.userType());
+        assertEquals(UserStatus.ACTIVE, resultado.userStatus());
         verify(passwordEncoder).encode("senha123");
         verify(userRepository).save(any(User.class));
+        verify(userMapper).toUserResponse(user);
     }
 
     // valida lancamento de excecao quando o email ja existe

@@ -25,9 +25,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
-    // cadastra novo usuario gerando hash seguro para a senha
+    // cadastra novo usuario gerando hash seguro para a senha e retorna dto de resposta
     @Transactional
-    public User salvar(UserRequest userRequest) {
+    public UserResponse salvar(UserRequest userRequest) {
         if (userRepository.existsByEmail(userRequest.email())) {
             throw new UserAlreadyExistsException("email ja cadastrado no sistema");
         }
@@ -39,7 +39,8 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(userRequest.password()));
         user.setUserStatus(UserStatus.ACTIVE);
 
-        return userRepository.save(user);
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     // busca usuario e converte para dto de resposta
