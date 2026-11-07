@@ -31,7 +31,7 @@ public class ClienteService {
 
         Cliente cliente = clienteMapper.toCliente(clienteRequest);
         cliente = clienteRepository.save(cliente);
-        return clienteMapper.toClientResponse(cliente);
+        return clienteMapper.toClienteResponse(cliente);
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +39,7 @@ public class ClienteService {
         User usuario = getUsuarioAutenticado();
         Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
-        return clienteMapper.toClientResponse(cliente);
+        return clienteMapper.toClienteResponse(cliente);
     }
 
     @Transactional
@@ -62,7 +62,7 @@ public class ClienteService {
 
         clienteRepository.save(cliente);
 
-        return clienteMapper.toClientResponse(cliente);
+        return clienteMapper.toClienteResponse(cliente);
     }
 
     @Transactional
@@ -71,10 +71,10 @@ public class ClienteService {
         Cliente cliente = clienteRepository.findByIdAndCreatedBy(id, usuario.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com id: " + id));
 
-        clienteMapper.parcialPatchUpdate(clienteRequest, cliente);
+        clienteMapper.patchUpdate(clienteRequest, cliente);
 
         clienteRepository.save(cliente);
-        return clienteMapper.toClientResponse(cliente);
+        return clienteMapper.toClienteResponse(cliente);
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +82,7 @@ public class ClienteService {
         User usuario = getUsuarioAutenticado();
         Page<Cliente> clientes = clienteRepository.findByNameContainingIgnoreCaseAndCreatedBy(name, usuario.getId(), pageable);
 
-        return clientes.map(clienteMapper::toClientResponse);
+        return clientes.map(clienteMapper::toClienteResponse);
     }
 
     @Transactional(readOnly = true)
@@ -92,7 +92,7 @@ public class ClienteService {
                 .findByCreatedByAndTelephoneContaining(usuario.getId(), telephone)
                 .orElseThrow(() -> new ResourceNotFoundException("cliente nao encontrado com telefone: " + telephone));
 
-        return clienteMapper.toClientResponse(cliente);
+        return clienteMapper.toClienteResponse(cliente);
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +101,7 @@ public class ClienteService {
 
         return clienteRepository
                 .findAllByCreatedBy(usuario.getId(), pageable)
-                .map(clienteMapper::toClientResponse);
+                .map(clienteMapper::toClienteResponse);
     }
 
     private User getUsuarioAutenticado() {

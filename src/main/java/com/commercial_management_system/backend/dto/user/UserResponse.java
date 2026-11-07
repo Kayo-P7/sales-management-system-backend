@@ -2,7 +2,6 @@ package com.commercial_management_system.backend.dto.user;
 
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
-import com.commercial_management_system.backend.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "representacao de dados do usuario")
@@ -25,14 +24,4 @@ public record UserResponse(
         @Schema(description = "status da conta", example = "ACTIVE")
         UserStatus userStatus
 ) {
-    public static UserResponse from(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getTelephone(),
-                user.getUserType(),
-                user.getUserStatus()
-        );
-    }
 }

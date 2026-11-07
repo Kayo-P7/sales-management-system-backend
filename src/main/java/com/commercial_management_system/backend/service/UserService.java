@@ -7,6 +7,7 @@ import com.commercial_management_system.backend.exception.UserAlreadyActivedExce
 import com.commercial_management_system.backend.exception.UserAlreadyDeactivedException;
 import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
 import com.commercial_management_system.backend.exception.UserNotFoundException;
+import com.commercial_management_system.backend.mapper.UserMapper;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,11 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
-    // cadastra novo usuario gerando hash seguro para a senha
+    // cadastra novo usuario gerando hash seguro para a senha e retorna dto de resposta
     @Transactional
-    public User salvar(UserRequest userRequest) {
+    public UserResponse salvar(UserRequest userRequest) {
         if (userRepository.existsByEmail(userRequest.email())) {
             throw new UserAlreadyExistsException("email ja cadastrado no sistema");
         }
@@ -33,24 +35,19 @@ public class UserService {
             throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
         }
 
-        String encodedPassword = passwordEncoder.encode(userRequest.password());
-        User user = new User(
-                userRequest.name(),
-                userRequest.email(),
-                userRequest.telephone(),
-                encodedPassword,
-                userRequest.userType(),
-                UserStatus.ACTIVE
-        );
+        User user = userMapper.toUser(userRequest);
+        user.setPassword(passwordEncoder.encode(userRequest.password()));
+        user.setUserStatus(UserStatus.ACTIVE);
 
-        return userRepository.save(user);
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     // busca usuario e converte para dto de resposta
     @Transactional(readOnly = true)
     public UserResponse buscarPorId(Long id) {
         User user = buscarEntidadePorId(id);
-        return UserResponse.from(user);
+        return userMapper.toUserResponse(user);
     }
 
     // busca entidade usuario para uso interno
@@ -65,10 +62,10 @@ public class UserService {
     public Page<UserResponse> listar(String name, Pageable pageable) {
         if (name != null && !name.isBlank()) {
             return userRepository.findByNameContainingIgnoreCase(name.trim(), pageable)
-                    .map(UserResponse::from);
+                    .map(userMapper::toUserResponse);
         }
         return userRepository.findAll(pageable)
-                .map(UserResponse::from);
+                .map(userMapper::toUserResponse);
     }
 
     // desativa usuario no sistema sem excluir o registro fisico

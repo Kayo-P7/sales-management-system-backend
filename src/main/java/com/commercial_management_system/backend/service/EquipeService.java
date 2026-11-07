@@ -182,6 +182,6 @@ public class EquipeService {
         }
         Page<Equipe> equipe = equipeRepository.findAll(pageable);
 
-        return equipe.map(equipeMapper::toPageEquipeResponse);
+        return equipe.map(equipeMapper::toEquipeResponsePage);
     }
 }
