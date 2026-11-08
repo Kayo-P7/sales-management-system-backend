@@ -1,717 +1,282 @@
 # Sales Management System Backend
 
-API RESTful para gerenciamento de vendas, desenvolvida com Java 17, Spring Boot, Spring Security, JWT, Spring Data JPA, PostgreSQL e Flyway.
+API RESTful de alta performance para gerenciamento comercial e vendas de veículos, desenvolvida com **Java 17**, **Spring Boot 3.4**, **Spring Security**, **JWT (Bearer)**, **Spring Data JPA**, **PostgreSQL** e **Flyway**.
 
-A aplicação oferece autenticação e autorização de usuários, gerenciamento de equipes, clientes, veículos e marcas, auditoria de registros e monitoramento operacional.
-
-## Sumário
-
-- [Tecnologias](#tecnologias)
-- [Funcionalidades](#funcionalidades)
-- [Pré-requisitos](#pré-requisitos)
-- [Configuração do ambiente](#configuração-do-ambiente)
-- [Como executar](#como-executar)
-- [Documentação Swagger / OpenAPI](#documentação-swagger--openapi)
-- [Autenticação e autorização](#autenticação-e-autorização)
-- [Gerenciamento de usuários e equipes](#gerenciamento-de-usuários-e-equipes)
-- [Gerenciamento de clientes](#gerenciamento-de-clientes)
-- [Registros diários](#registros-diários)
-- [Gerenciamento de veículos e marcas](#gerenciamento-de-veículos-e-marcas)
-- [Versionamento do banco de dados](#versionamento-do-banco-de-dados)
-- [Auditoria](#auditoria)
-- [Segurança e limitação de requisições](#segurança-e-limitação-de-requisições)
-- [Observabilidade e monitoramento](#observabilidade-e-monitoramento)
-- [Refresh Tokens](#refresh-tokens)
-- [Testes](#testes)
-- [Endpoints úteis](#endpoints-úteis)
+A aplicação oferece autenticação stateless com controle granular de acesso (`ADMIN`, `SUPERVISOR`, `SELLER`), rotação atômica de refresh tokens, gestão de equipes comerciais, carteira de clientes, inventário de veículos e marcas, auditoria automatizada de entidades, limitação de taxa de requisições com Bucket4j e observabilidade com Spring Boot Actuator e Micrometer.
 
 ---
 
-## Tecnologias
+## Arquitetura em Camadas do Backend
 
-| Tecnologia | Finalidade |
-|---|---|
-| Java 17 | Linguagem de programação |
-| Spring Boot | Framework principal da aplicação |
-| Spring Security | Autenticação e autorização |
-| JWT | Autenticação por token |
-| Spring Data JPA | Persistência e acesso aos dados |
-| Hibernate | Mapeamento objeto-relacional |
-| PostgreSQL | Banco de dados relacional |
-| Flyway | Versionamento do esquema do banco |
-| MapStruct | Mapeamento entre DTOs e entidades |
-| Springdoc OpenAPI | Documentação da API |
-| Bucket4j | Limitação de requisições |
-| Spring Boot Actuator | Verificação de saúde e métricas |
-| Micrometer | Coleta de métricas |
-| SLF4J MDC | Rastreamento de requisições nos logs |
-| Maven | Gerenciamento de dependências e build |
+```mermaid
+flowchart TD
+    subgraph Client ["Clientes e Consumidores"]
+        Frontend["Frontend SPA (Angular 21)<br/>Porta 4200"]
+        Swagger["Swagger UI / OpenAPI<br/>/swagger-ui/index.html"]
+    end
 
-## Funcionalidades
+    subgraph SecurityLayer ["Camada de Seguranca e Filtros"]
+        RateLimit["RateLimitFilter (Bucket4j)<br/>Token Bucket por IP"]
+        MDC["CorrelationIdFilter<br/>Rastreabilidade SLF4J MDC"]
+        JWTFilter["SecurityFilter (OncePerRequestFilter)<br/>Validacao de Tokens JWT e Claims"]
+    end
 
-### Autenticação e usuários
+    subgraph WebLayer ["Camada Web / Controllers REST (:8089)"]
+        AuthController["AuthController<br/>/api/v1/auth"]
+        VehicleController["VehicleController<br/>/api/v1/vehicles"]
+        BrandController["BrandController<br/>/api/v1/brands"]
+        CustomerController["ClienteController<br/>/api/v1/clientes"]
+        SaleController["RegistroDiarioController<br/>/api/v1/registros-diarios"]
+        TeamController["EquipeController<br/>/api/v1/equipes"]
+        UserController["UserController<br/>/api/v1/users"]
+        Actuator["Actuator Endpoints<br/>/actuator/health e metrics"]
+    end
 
-- Cadastro e autenticação de usuários.
-- Autenticação por JWT.
-- Controle de acesso baseado em papéis.
-- Renovação de sessão por refresh tokens.
-- Rotação e revogação de refresh tokens.
-- Controle do estado dos usuários.
-- Armazenamento de senhas utilizando o mecanismo de codificação configurado na aplicação.
+    subgraph ServiceLayer ["Camada de Servicos e Negocio"]
+        AuthService["AuthService / RefreshTokenService"]
+        VehicleService["VehicleService"]
+        BrandService["BrandService"]
+        ClienteService["ClienteService"]
+        RegistroDiarioService["RegistroDiarioService"]
+        EquipeService["EquipeService"]
+        UserService["UserService"]
+    end
 
-### Gerenciamento de equipes
+    subgraph DataLayer ["Camada de Acesso a Dados e Persistencia"]
+        Repo["Spring Data JPA Repositories<br/>+ JPA Specifications"]
+        Mappers["MapStruct Mappers<br/>DTOs <-> Entidades"]
+        Auditing["AuditingEntityListener<br/>createdAt / updatedAt / createdBy"]
+        Flyway["Flyway Migrations<br/>db/migration (V1..V4)"]
+        DB[("PostgreSQL 16<br/>sales_management")]
+    end
 
-- Criação de equipes por supervisores autenticados.
-- Associação de vendedores às equipes.
-- Validação do papel do usuário antes de associá-lo como vendedor.
-- Verificação de que o vendedor não pertence a outra equipe.
-- Prevenção da criação de múltiplas equipes pelo mesmo supervisor.
-- Consulta de equipe a partir do ID de um vendedor.
-- Consulta da equipe do supervisor autenticado.
-- Remoção de vendedores de uma equipe sem excluir suas contas.
-- Relacionamento entre usuários, supervisores, equipes e vendedores.
+    Frontend --> RateLimit
+    Swagger --> RateLimit
+    RateLimit --> MDC
+    MDC --> JWTFilter
+    JWTFilter --> WebLayer
 
-### Gerenciamento de clientes
-
-- Cadastro e atualização de clientes.
-- Consulta e pesquisa de clientes.
-- Paginação nas operações de listagem que oferecem esse recurso.
-- Atualização parcial de dados por meio de PATCH.
-- Registro automático de datas de criação e modificação.
-- Auditoria dos usuários responsáveis pela criação e atualização dos registros.
-- Operações protegidas por autenticação.
-
-As regras de negócio preveem que vendedores gerenciem seus próprios clientes, supervisores acessem os clientes dentro de suas equipes e administradores tenham acesso administrativo mais amplo.
-
-Essas permissões devem ser aplicadas pelo backend, por meio das regras de negócio e das consultas ao banco, e não somente pela interface do frontend.
-
-### Registros diários de vendas
-
-- Cadastro e atualização dos indicadores diários de cada vendedor.
-- Registro de pendências novas, ligações, negociações, agendamentos, chamadas de vídeo, clientes em loja, fechamentos e anúncios.
-- Associação do registro ao vendedor autenticado.
-- Restrição de um registro por vendedor em cada data.
-- Validação para impedir valores negativos nas métricas.
-- Vendedores gerenciam os próprios registros; supervisores consultam os registros dos vendedores da própria equipe; administradores possuem acesso geral de consulta.
-
-### Registros diários
-
-O recurso permite acompanhar indicadores diários de atividade e desempenho dos vendedores.
-
-### Modelo de dados
-
-Cada registro está associado a um vendedor e a uma data. A tabela `registro_diario` possui uma restrição única para a combinação de vendedor e data, impedindo mais de um registro para o mesmo vendedor no mesmo dia.
-
-Os campos de métricas são inteiros, podem ficar sem valor quando não houver informação e, quando preenchidos, devem ser maiores ou iguais a zero.
-
-### Campos do registro
-
-| Campo | Descrição |
-|---|---|
-| `pendenciasNovas` | Quantidade de novas pendências |
-| `ligacoes` | Quantidade de ligações |
-| `negociacoes` | Quantidade de negociações |
-| `agendamentos` | Quantidade de agendamentos |
-| `chamadasVideo` | Quantidade de chamadas de vídeo |
-| `clientesEmLoja` | Quantidade de clientes atendidos na loja |
-| `fechamentos` | Quantidade de fechamentos |
-| `anuncios` | Quantidade de anúncios |
-
-A data e o vendedor são definidos pelo backend conforme a implementação do endpoint e o usuário autenticado. O cliente da API não deve atribuir o registro a outro vendedor enviando um identificador arbitrário.
-
-### Exemplo de requisição
-
-```json
-{
-  "pendenciasNovas": 5,
-  "ligacoes": 20,
-  "negociacoes": 8,
-  "agendamentos": 4,
-  "chamadasVideo": 3,
-  "clientesEmLoja": 6,
-  "fechamentos": 2,
-  "anuncios": 10
-}
+    WebLayer --> ServiceLayer
+    ServiceLayer --> Mappers
+    ServiceLayer --> Repo
+    Repo --> Auditing
+    Auditing --> DB
+    Flyway -.->|"Migracoes automaticas"| DB
 ```
 
-Envie o token JWT no cabeçalho:
+---
 
-```http
-Authorization: Bearer <access_token>
-Content-Type: application/json
+## Fluxo de Autenticação e Renovação de Sessão
+
+Diagrama de sequência exibindo o ciclo de login, emissão de Access Token (JWT), rotação de Refresh Token e autorização por papel:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Cliente / Frontend
+    participant Sec as RateLimit & Security Filter
+    participant Auth as AuthController (:8089)
+    participant TokenSvc as RefreshTokenService
+    participant DB as PostgreSQL 16
+
+    Client->>Sec: POST /api/v1/auth/login (email, password)
+    Sec->>Sec: Verifica cota de requisicoes (Bucket4j: 10 req/min)
+    Sec->>Auth: Encaminha requisicao valida
+    Auth->>DB: Busca usuario e valida senha (BCrypt)
+    DB-->>Auth: Usuario validado com roles
+    Auth->>TokenSvc: Cria Refresh Token unico e opaco
+    TokenSvc->>DB: Persiste refresh token ativo
+    Auth->>Auth: Gera Access Token JWT assinado (HMAC-SHA)
+    Auth-->>Client: 200 OK (accessToken, refreshToken, expiresIn)
+
+    Note over Client,Sec: Sessao ativa realizando operacoes na API
+
+    Client->>Sec: POST /api/v1/auth/refresh (refreshToken)
+    Sec->>Auth: Encaminha requisicao de renovacao
+    Auth->>TokenSvc: Valida e rotaciona refresh token
+    TokenSvc->>DB: Revoga token anterior e persiste novo token
+    Auth->>Auth: Emite novo par de Access Token e Refresh Token
+    Auth-->>Client: 200 OK (novos tokens emitidos)
 ```
 
-Consulte o Swagger UI para confirmar o caminho exato do endpoint, seus parâmetros e o formato da resposta.
+---
 
-### Regras de acesso
+## Estrutura de Diretórios do Projeto
 
-| Papel | Permissões |
-|---|---|
-| `ROLE_VENDEDOR` | Cadastra e atualiza os próprios registros e consulta os próprios dados |
-| `ROLE_SUPERVISOR` | Consulta os registros dos vendedores vinculados à sua equipe |
-| `ROLE_ADMIN` | Consulta os registros de todos os vendedores |
-
-As regras de escopo devem ser aplicadas no backend. O vendedor deve ser identificado pelo contexto de segurança, e supervisores não devem consultar registros de equipes às quais não pertencem.
+```text
+sales-management-system-backend/
+├── src/main/java/com/commercial_management_system/backend/
+│   ├── config/                        # Configuracoes de seguranca, rate limit, CORS e Swagger
+│   │   ├── beansConfig/               # Configuracao de auditoria (AuditorAware)
+│   │   ├── CorrelationIdFilter.java   # Injecao de correlationId no SLF4J MDC
+│   │   ├── CorsConfig.java            # Politicas de CORS da aplicacao
+│   │   ├── OpenApiConfig.java         # Documentacao OpenAPI 3.0 / Swagger
+│   │   ├── RateLimitFilter.java       # Filtro Token Bucket com Bucket4j
+│   │   ├── RateLimitProperties.java   # Propriedades configuraveis de rate limit
+│   │   ├── SecurityConfigurations.java# SecurityFilterChain e PasswordEncoder
+│   │   └── SecurityFilter.java        # OncePerRequestFilter para validacao JWT
+│   │
+│   ├── controller/                    # Endpoints REST (Auth, Veiculos, Clientes, Equipes, etc.)
+│   ├── dto/                           # Records de requisicao e resposta imutaveis
+│   ├── enums/                         # Enums de dominio (UserType, VehicleType, etc.)
+│   ├── exception/                     # Tratamento global de excecoes (GlobalExceptionHandler)
+│   ├── mapper/                        # Mapeamento DTO <-> Entidade via MapStruct
+│   ├── model/                         # Entidades JPA (User, Vehicle, Cliente, Equipe, etc.)
+│   ├── repository/                    # Interfaces Spring Data JPA
+│   ├── service/                       # Regras de negocio e orquestracao de servicos
+│   └── specifications/                # Filtros dinamicos com JPA Criteria
+│
+├── src/main/resources/
+│   ├── db/migration/                  # Migracoes Flyway versionadas (V1 a V4)
+│   └── application.yaml               # Parametrizacao centralizada do Spring Boot
+│
+├── src/test/java/                     # Suite de 68 testes automatizados (unitarios, integracao e seguranca)
+├── .env.example                       # Modelo de variaveis de ambiente
+├── pom.xml                            # Dependencias Maven e plugins de build
+└── README.md                          # Este documento
+```
 
 ---
 
-## Gerenciamento de veículos e marcas
+## Configuração de Variáveis de Ambiente (.env)
 
-- Cadastro, consulta e listagem de veículos.
-- Pesquisa e filtragem de veículos.
-- Atualização completa ou parcial.
-- Exclusão de veículos por ID ou nome, conforme as rotas configuradas.
-- Associação entre veículos e marcas cadastradas.
-- Representação de cor e tipo por enums.
-- Utilização de `BigDecimal` para valores monetários.
-
-### Recursos operacionais
-
-- Versionamento do esquema do banco com Flyway.
-- Identificação e rastreamento de requisições por Correlation ID.
-- Limitação de requisições para reduzir abusos da API.
-- Verificação de saúde da aplicação.
-- Métricas operacionais por meio do Actuator e Micrometer.
-- Documentação interativa com Swagger UI.
-
----
-
-## Pré-requisitos
-
-- Java JDK 17 ou superior.
-- Maven, caso não utilize o Maven Wrapper incluído no projeto.
-- PostgreSQL 16 ou superior instalado e em execução.
-
-## Configuração do ambiente
-
-Crie o arquivo de variáveis de ambiente a partir do modelo:
+O backend utiliza a biblioteca `spring-dotenv` para leitura automática do arquivo `.env` na raiz do módulo. Copie o arquivo modelo antes de iniciar:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` para configurar as credenciais do banco, as portas, o segredo JWT e as origens permitidas para requisições cross-origin (`CORS_ALLOWED_ORIGINS`), de acordo com as variáveis utilizadas pela aplicação. Todos os valores de configuração devem ser preenchidos diretamente no arquivo `.env`.
+### Detalhamento das Variáveis
 
-**Não envie credenciais reais, senhas ou segredos JWT para o repositório.** O arquivo `.env` deve permanecer fora do controle de versão quando contiver informações sensíveis.
+| Variável | Padrão | Descrição |
+| :--- | :--- | :--- |
+| `SERVER_PORT` | `8089` | Porta HTTP onde o backend executa |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/sales_management` | URL JDBC de conexão com o PostgreSQL |
+| `DB_USERNAME` | `postgres` | Usuário do PostgreSQL |
+| `DB_PASSWORD` | `postgres` | Senha de autenticação do PostgreSQL |
+| `JWT_SECRET` | `sua_chave_secreta_aqui` | Chave secreta HMAC-SHA (mínimo de 256 bits) para assinatura JWT |
+| `RATE_LIMIT_ENABLED` | `true` | Ativa ou desativa a limitação de requisições |
+| `RATE_LIMIT_AUTH_CAPACITY` | `10` | Capacidade máxima de requisições de autenticação por intervalo |
+| `RATE_LIMIT_AUTH_REFILL_TOKENS` | `10` | Quantidade de tokens repostos por ciclo de auth |
+| `RATE_LIMIT_AUTH_DURATION` | `60` | Duração do ciclo de auth em segundos |
+| `RATE_LIMIT_GENERAL_CAPACITY` | `60` | Capacidade máxima de requisições gerais por intervalo |
+| `RATE_LIMIT_GENERAL_REFILL_TOKENS` | `60` | Tokens repostos por ciclo geral |
+| `RATE_LIMIT_GENERAL_DURATION` | `60` | Duração do ciclo geral em segundos |
+| `FLYWAY_ENABLED` | `true` | Ativa a execução automática das migrações Flyway |
+| `FLYWAY_BASELINE_ON_MIGRATE` | `true` | Habilita criação de linha de base automática |
+| `FLYWAY_BASELINE_VERSION` | `1` | Versão inicial considerada na linha de base |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | Origens web autorizadas no CORS |
 
-## Como executar
+---
 
-Certifique-se de que o banco de dados PostgreSQL esteja ativo e com a base de dados criada de acordo com a variável `DB_URL` configurada no `.env`.
+## Como Executar
 
-Execute a aplicação com o Maven Wrapper:
+### Pré-requisitos
+- **Java JDK 17 ou 21** instalado:
+  ```bash
+  java -version
+  ```
+- **PostgreSQL 16** instalado e em execução:
+  ```bash
+  systemctl status postgresql
+  ```
+
+---
+
+### Passo 1: Criar a Base de Dados
+
+Conecte-se ao seu PostgreSQL local e crie o banco de dados `sales_management`:
+
+```sql
+CREATE DATABASE sales_management;
+```
+
+---
+
+### Passo 2: Executar a Aplicação Spring Boot
 
 ```bash
+mvn spring-boot:run
+# ou utilizando o Maven Wrapper:
 ./mvnw spring-boot:run
 ```
 
-Para iniciar a aplicação sem executar os testes primeiro:
-
-```bash
-./mvnw spring-boot:run -DskipTests
-```
-
-Esse comando ignora a execução dos testes, mas ainda realiza a compilação do código.
-
-Verifique a porta configurada na aplicação (`SERVER_PORT` no `.env`) antes de acessar a API.
+A aplicação inicializará na porta `8089` e aplicará automaticamente todas as migrações do Flyway.
 
 ---
 
-## Documentação Swagger / OpenAPI
+## Endpoints e Documentação Interativa
 
-A API utiliza Springdoc OpenAPI para gerar a documentação interativa dos endpoints.
+Acesse a documentação interativa Swagger UI e o contrato OpenAPI em:
 
-Em uma execução local na porta `8080`, os endereços são:
+* **Swagger UI**: [http://localhost:8089/swagger-ui/index.html](http://localhost:8089/swagger-ui/index.html)
+* **OpenAPI 3.0 JSON**: [http://localhost:8089/v3/api-docs](http://localhost:8089/v3/api-docs)
 
-- **Swagger UI:** http://localhost:8080/swagger-ui/index.html
-- **Especificação OpenAPI em JSON:** http://localhost:8080/v3/api-docs
+### Resumo das Rotas Principais
 
-Caso a aplicação utilize outra porta, substitua `8080` pela porta configurada.
-
-### Como autenticar no Swagger
-
-1. Execute `POST /api/v1/auth/login` com as credenciais de um usuário cadastrado.
-2. Copie o token de acesso retornado.
-3. Clique em **Authorize** no topo do Swagger UI.
-4. Informe o token conforme o esquema de autenticação configurado.
-5. Execute os endpoints protegidos.
-
-Quando a autenticação estiver configurada como HTTP Bearer, normalmente basta informar o token, sem acrescentar manualmente o prefixo `Bearer`.
-
----
-
-## Autenticação e autorização
-
-A aplicação utiliza Spring Security e JWT para autenticar as requisições.
-
-As chamadas protegidas devem incluir o token no cabeçalho HTTP:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-O filtro de autenticação valida o token, identifica o usuário e estabelece o contexto de segurança utilizado durante a requisição.
-
-### Papéis de acesso
-
-| Papel | Responsabilidade |
-|---|---|
-| `ROLE_ADMIN` | Operações administrativas e gerenciamento geral do sistema |
-| `ROLE_SUPERVISOR` | Gerenciamento de equipes e acesso aos dados autorizados da equipe |
-| `ROLE_VENDEDOR` | Operações de vendas e acesso aos clientes autorizados |
-
-As permissões de acesso aos endpoints podem ser controladas por anotações como `@PreAuthorize`.
-
-A autorização no controller não substitui a validação de acesso aos registros. O serviço e o repositório também precisam garantir, por exemplo, que um supervisor não altere dados de vendedores de outra equipe.
+| Módulo | Método | Endpoint | Acesso | Descrição |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auth** | `POST` | `/api/v1/auth/login` | Público | Autenticação por e-mail e senha |
+| **Auth** | `POST` | `/api/v1/auth/refresh` | Público | Rotação e renovação de tokens |
+| **Auth** | `POST` | `/api/v1/auth/logout` | Autenticado | Revogação de sessão ativa |
+| **Veículos** | `GET` | `/api/v1/vehicles` | Autenticado | Consulta com filtros (`name`, `color`, `price`, `type`) |
+| **Veículos** | `POST` | `/api/v1/vehicles` | Supervisor / Admin | Cadastro de novo anúncio com validação |
+| **Veículos** | `PUT` | `/api/v1/vehicles/{id}` | Supervisor / Admin | Atualização de dados cadastrais |
+| **Veículos** | `DELETE`| `/api/v1/vehicles/{id}` | Supervisor / Admin | Remoção do veículo |
+| **Marcas** | `GET` | `/api/v1/brands` | Autenticado | Listagem de marcas automotivas |
+| **Marcas** | `POST` | `/api/v1/brands` | Supervisor / Admin | Cadastro de marca com lock otimista (`@Version`) |
+| **Clientes** | `GET` | `/api/v1/clientes` | Autenticado | Consulta paginada da carteira de clientes |
+| **Clientes** | `POST` | `/api/v1/clientes` | Autenticado | Cadastro de cliente com validação de dados |
+| **Clientes** | `PATCH`| `/api/v1/clientes/{id}` | Autenticado | Atualização parcial de dados do cliente |
+| **Equipes** | `GET` | `/api/v1/equipes` | Supervisor / Admin | Consulta da equipe comercial |
+| **Equipes** | `POST` | `/api/v1/equipes` | Supervisor / Admin | Criação de equipe e associação de vendedores |
+| **Registros**| `GET` | `/api/v1/registros-diarios` | Autenticado | Histórico de indicadores comerciais |
+| **Registros**| `POST` | `/api/v1/registros-diarios` | Vendedor | Lançamento diário de metas e fechamentos |
+| **Saúde** | `GET` | `/actuator/health` | Autenticado / Admin | Diagnóstico de integridade do banco e aplicação |
+| **Métricas** | `GET` | `/actuator/metrics` | Admin | Coleta de métricas JVM e HikariCP |
 
 ---
 
-## Gerenciamento de usuários e equipes
+## Auditoria de Dados (JPA Auditing)
 
-### Modelo de dados
-
-O gerenciamento de equipes utiliza três conceitos principais:
-
-- **Usuário (`User`):** representa um administrador, supervisor ou vendedor.
-- **Equipe (`Equipe`):** armazena o nome da equipe e seu supervisor.
-- **Vínculo do vendedor:** associa o vendedor a uma equipe.
-
-Cada equipe possui um supervisor, e cada supervisor pode gerenciar apenas uma equipe. Um vendedor pode pertencer a, no máximo, uma equipe, enquanto uma equipe pode conter vários vendedores.
-
-Os usuários mantêm IDs numéricos globais e únicos no banco de dados. Identificadores visuais, como `Vendedor 001`, devem ser tratados separadamente da chave primária.
-
-### Endpoints de equipes
-
-Prefixo: `/api/v1/equipes`
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `POST` | `/api/v1/equipes` | Cadastra uma equipe e associa vendedores |
-| `GET` | `/api/v1/equipes` | Consulta a equipe do supervisor autenticado |
-| `GET` | `/api/v1/equipes/vendedores/{id}` | Consulta a equipe a partir do ID de um vendedor |
-| `DELETE` | `/api/v1/equipes/vendedores/{id}` | Remove um vendedor da equipe |
-
-A autorização efetiva e os códigos de resposta devem corresponder à implementação atual do controller e do serviço. Consulte o Swagger para verificar os detalhes de cada operação.
-
-### Exemplo de cadastro de equipe
-
-Requisição para `POST /api/v1/equipes`:
-
-```json
-{
-  "nome": "Equipe Norte",
-  "vendedores": [3, 4]
-}
-```
-
-Os IDs devem corresponder a usuários existentes com o papel `ROLE_VENDEDOR` que ainda não estejam associados a outra equipe.
-
-O serviço busca os usuários no banco, valida seus papéis e vínculos e realiza as associações. A resposta contém os dados da equipe no formato `EquipeResponse`.
-
-O cadastro utiliza uma transação para permitir que as alterações sejam revertidas caso uma exceção provoque rollback.
-
-### Remoção de vendedor
-
-Exemplo de requisição:
-
-```http
-DELETE /api/v1/equipes/vendedores/3
-```
-
-A operação remove a associação do vendedor com a equipe, mas não exclui a conta do usuário.
-
-Antes de realizar a alteração, o serviço deve verificar se o vendedor pertence à equipe do supervisor autenticado.
-
----
-
-## Gerenciamento de clientes
-
-As operações de clientes são organizadas por meio de controller, service, repository, DTOs de requisição e resposta e mapper com MapStruct.
-
-### DTOs e mapeamento
-
-O DTO de requisição de cliente contempla campos como:
-
-- `name`
-- `telephone`
-- `email`
-- `notes`
-
-O mapper separa os dados expostos pela API da entidade persistida. No cadastro e nas atualizações, os campos de ID e auditoria são ignorados no mapeamento normal, evitando que o cliente da API controle diretamente esses valores.
-
-O mapeamento de PATCH atualiza os campos explicitamente configurados, preservando valores que não foram informados.
-
-### Pesquisa e paginação
-
-O repositório de clientes inclui consultas baseadas no criador, nome e telefone, como:
-
-- Busca por ID do cliente e ID do criador.
-- Pesquisa por parte do telefone, considerando o criador.
-- Listagem paginada de clientes por criador.
-- Pesquisa por nome ignorando diferenças entre letras maiúsculas e minúsculas.
-
-Essas consultas fazem parte da implementação de acesso aos clientes. A regra final deve distinguir o usuário que criou um cliente do vendedor responsável pelo atendimento quando esses papéis forem diferentes.
-
-Consulte o Swagger UI para conferir os caminhos exatos, parâmetros e formatos de resposta dos endpoints de clientes.
-
----
-
-## Registros diários
-
-O recurso permite acompanhar indicadores diários de atividade e desempenho dos vendedores.
-
-### Modelo de dados
-
-Cada registro está associado a um vendedor e a uma data. A tabela `registro_diario` possui uma restrição única para a combinação de vendedor e data, impedindo mais de um registro para o mesmo vendedor no mesmo dia.
-
-Os campos de métricas são inteiros, podem ficar sem valor quando não houver informação e, quando preenchidos, devem ser maiores ou iguais a zero.
-
-### Campos do registro
-
-| Campo | Descrição |
-|---|---|
-| `pendenciasNovas` | Quantidade de novas pendências |
-| `ligacoes` | Quantidade de ligações |
-| `negociacoes` | Quantidade de negociações |
-| `agendamentos` | Quantidade de agendamentos |
-| `chamadasVideo` | Quantidade de chamadas de vídeo |
-| `clientesEmLoja` | Quantidade de clientes atendidos na loja |
-| `fechamentos` | Quantidade de fechamentos |
-| `anuncios` | Quantidade de anúncios |
-
-A data e o vendedor são definidos pelo backend conforme a implementação do endpoint e o usuário autenticado. O cliente da API não deve atribuir o registro a outro vendedor enviando um identificador arbitrário.
-
-### Exemplo de requisição
-
-```json
-{
-  "pendenciasNovas": 5,
-  "ligacoes": 20,
-  "negociacoes": 8,
-  "agendamentos": 4,
-  "chamadasVideo": 3,
-  "clientesEmLoja": 6,
-  "fechamentos": 2,
-  "anuncios": 10
-}
-```
-
-Envie o token JWT no cabeçalho:
-
-```http
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-Consulte o Swagger UI para confirmar o caminho exato do endpoint, seus parâmetros e o formato da resposta.
-
-### Regras de acesso
-
-| Papel | Permissões |
-|---|---|
-| `ROLE_VENDEDOR` | Cadastra e atualiza os próprios registros e consulta os próprios dados |
-| `ROLE_SUPERVISOR` | Consulta os registros dos vendedores vinculados à sua equipe |
-| `ROLE_ADMIN` | Consulta os registros de todos os vendedores |
-
-As regras de escopo devem ser aplicadas no backend. O vendedor deve ser identificado pelo contexto de segurança, e supervisores não devem consultar registros de equipes às quais não pertencem.
-
----
-
-## Gerenciamento de veículos e marcas
-
-A API disponibiliza operações para gerenciamento de veículos e marcas.
-
-### Campos do veículo
-
-| Campo | Descrição |
-|---|---|
-| `name` | Nome do veículo |
-| `color` | Cor representada pelo enum `VehicleColor` |
-| `vehicleType` | Tipo representado pelo enum `VehicleType` |
-| `price` | Preço representado por `BigDecimal` |
-| `brandId` | ID de uma marca já cadastrada |
-
-### Exemplo de cadastro
-
-```http
-POST /api/v1/vehicles
-Content-Type: application/json
-Authorization: Bearer <access_token>
-```
-
-```json
-{
-  "name": "Corolla",
-  "color": "PRETO",
-  "vehicleType": "CAR",
-  "price": 120000.00,
-  "brandId": 1
-}
-```
-
-Utilize valores existentes nos enums (`VehicleColor`: `PRETO`, `BRANCO`, `PRATA`, `VERMELHO`, `AZUL`, `CINZA`, `VERDE`; `VehicleType`: `CAR`, `MOTO`) e um `brandId` válido.
-
-As rotas e restrições de acesso de veículos e marcas são definidas pelos respectivos controllers e podem ser consultadas no Swagger UI.
-
----
-
-## Versionamento do banco de dados
-
-O projeto utiliza Flyway para gerenciar as alterações do esquema do PostgreSQL de maneira versionada e rastreável.
-
-Os arquivos de migration ficam em:
-
-```text
-src/main/resources/db/migration/
-```
-
-A nomenclatura segue o padrão:
-
-```text
-V<VERSAO>__<descricao>.sql
-```
-
-Exemplos:
-
-```text
-V1__create_initial_schema.sql
-V2__add_new_column_to_users.sql
-V4__create_equipe_and_update_users.sql
-V5__create_registro_diario.sql
-```
-
-As migrations atuais incluem `V4__create_equipe_and_update_users.sql`, responsável pela estrutura de equipes e pelos papéis de usuário, e `V5__create_registro_diario.sql`, responsável pela tabela de registros diários. Consulte o diretório para verificar a sequência completa e atualizada.
-
-### Como criar uma migration
-
-1. Identifique a próxima versão ainda não utilizada.
-2. Crie um novo arquivo SQL no diretório de migrations.
-3. Adicione as alterações necessárias, incluindo tabelas, índices, restrições e chaves estrangeiras.
-4. Atualize as entidades JPA correspondentes.
-5. Confira a compatibilidade com a validação do esquema do Hibernate.
-6. Execute a aplicação e os testes em um banco de desenvolvimento.
-
-**Não altere migrations que já foram aplicadas em ambientes compartilhados.** Crie uma nova migration para realizar alterações posteriores.
-
-### Comandos úteis
-
-Inicie a aplicação para que o Flyway processe as migrations pendentes:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Execute os testes automatizados:
-
-```bash
-./mvnw clean test
-```
-
-Os comandos específicos do Maven Flyway dependem da configuração do plugin e das propriedades de conexão com o banco.
-
----
-
-## Auditoria
-
-As entidades de clientes utilizam a auditoria do Spring Data JPA para registrar a criação e a última modificação dos registros.
+As entidades do sistema utilizam auditoria automática do Spring Data JPA com `AuditingEntityListener`:
 
 | Campo | Finalidade |
-|---|---|
-| `createdAt` | Data e hora da criação |
+| :--- | :--- |
+| `createdAt` | Data e hora exatas de criação do registro |
 | `updatedAt` | Data e hora da última modificação |
-| `createdBy` | ID do usuário que criou o registro |
-| `updatedBy` | ID do usuário que modificou o registro pela última vez |
+| `createdBy` | ID do usuário autenticado responsável pela criação |
+| `updatedBy` | ID do usuário autenticado responsável pela alteração |
 
-A implementação utiliza anotações como:
-
-```java
-@CreatedDate
-private LocalDateTime createdAt;
-
-@LastModifiedDate
-private LocalDateTime updatedAt;
-
-@CreatedBy
-private Long createdBy;
-
-@LastModifiedBy
-private Long updatedBy;
-```
-
-As entidades são configuradas com `AuditingEntityListener`, e a auditoria é habilitada na aplicação.
-
-Uma implementação de `AuditorAware<Long>` obtém o usuário autenticado no contexto do Spring Security para identificar quem executou a operação.
-
-Os campos de auditoria são gerenciados pelo backend e não devem ser controlados diretamente pelo usuário nas requisições normais de cadastro e atualização.
+A auditoria é gerenciada de forma transparente pelo backend através do componente `AuditorAware<Long>`, impedindo manipulação manual nas requisições.
 
 ---
 
-## Segurança e limitação de requisições
+## Segurança e Rate Limiting (Bucket4j)
 
-### JWT e permissões
-
-Os endpoints protegidos exigem autenticação. As anotações de autorização limitam o acesso de acordo com o papel do usuário.
-
-As regras de negócio também devem verificar o acesso aos registros, especialmente nas operações de equipes e clientes.
-
-### Rate Limiting
-
-A aplicação possui um filtro de limitação de requisições utilizando Bucket4j e o algoritmo Token Bucket.
-
-A configuração original documenta os seguintes limites padrão:
-
-- Rotas de autenticação: 10 requisições por minuto por IP.
-- Rotas gerais da API: 60 requisições por minuto por IP.
-
-Os valores efetivos dependem da configuração ativa e devem ser verificados antes da implantação.
-
-A configuração original exclui rotas da documentação e o endpoint de saúde da limitação de requisições.
-
-Quando o limite é excedido, a aplicação pode retornar `429 Too Many Requests`.
-
-Cabeçalhos relevantes:
-
-- `X-Rate-Limit-Remaining`
-- `Retry-After`
-- `X-Rate-Limit-Retry-After-Seconds`
+A aplicação conta com proteção nativa contra força bruta e sobrecarga:
+- **Rotas de Autenticação (`/api/v1/auth/**`)**: Limite de 10 requisições por minuto por IP.
+- **Rotas Gerais (`/api/v1/**`)**: Limite de 60 requisições por minuto por IP.
+- **Cabeçalhos de Resposta**:
+  - `X-Rate-Limit-Remaining`: Requisições restantes na janela ativa.
+  - `Retry-After`: Tempo de espera (em segundos) caso o limite seja atingido (`HTTP 429 Too Many Requests`).
 
 ---
 
-## Observabilidade e monitoramento
+## Execução da Suíte de Testes Automatizados
 
-### Correlation ID
-
-O `CorrelationIdFilter` associa um identificador às requisições HTTP.
-
-- Um cabeçalho `X-Correlation-ID` enviado pelo cliente é preservado quando suportado pela configuração.
-- Se o cabeçalho não existir, um UUID será gerado.
-- O identificador é incluído no cabeçalho da resposta.
-- O SLF4J MDC adiciona o identificador aos logs relevantes.
-- O contexto MDC é limpo ao término do processamento da requisição.
-
-Esse mecanismo facilita a identificação dos logs relacionados a uma mesma chamada da API.
-
-### Spring Boot Actuator e Micrometer
-
-A aplicação disponibiliza endpoints do Actuator e métricas do Micrometer.
-
-Endpoints úteis:
-
-```http
-GET /actuator/health
-GET /actuator/metrics
-```
-
-Dependendo da configuração de segurança, informações básicas de saúde podem ser públicas, enquanto métricas operacionais exigem autenticação administrativa.
-
-As métricas podem incluir:
-
-- Memória e threads da JVM.
-- Quantidade e latência de requisições HTTP.
-- Métricas do pool de conexões HikariCP.
-- Contadores de requisições permitidas e rejeitadas pelo rate limiting.
-
-Informações operacionais sensíveis devem permanecer acessíveis apenas a usuários autorizados.
-
----
-
-## Refresh Tokens
-
-A autenticação contempla renovação e revogação de sessões por meio de refresh tokens.
-
-### Login
-
-```http
-POST /api/v1/auth/login
-```
-
-Retorna um JWT de acesso e, conforme a implementação de autenticação, um refresh token.
-
-### Renovação
-
-```http
-POST /api/v1/auth/refresh
-Content-Type: application/json
-```
-
-```json
-{
-  "refreshToken": "<refresh_token>"
-}
-```
-
-O fluxo de renovação valida o token enviado, revoga o token consumido e emite um novo par de tokens quando a operação é bem-sucedida.
-
-### Logout
-
-```http
-POST /api/v1/auth/logout
-Content-Type: application/json
-```
-
-```json
-{
-  "refreshToken": "<refresh_token>"
-}
-```
-
-O logout revoga o refresh token ativo informado, impedindo que ele seja utilizado novamente para renovar a sessão.
-
-Tokens expirados, inválidos ou revogados devem ser tratados pela configuração de autenticação e pelo mecanismo de tratamento de exceções da aplicação.
-
----
-
-## Testes
-
-A aplicação dispõe de uma suíte abrangente com **68 testes automatizados** e 100% de cobertura funcional aprovada. O catálogo detalhado, os cenários cobertos e as diretrizes de execução estão documentados em [`TESTES.md`](TESTES.md).
-
-Execute a suíte completa de testes com:
+A aplicação dispõe de uma suíte abrangente com **68 testes automatizados** e 100% de aprovação funcional:
 
 ```bash
+mvn test
+# ou:
 ./mvnw clean test
 ```
 
-A arquitetura de testes cobre:
-
-1. **Testes Unitários:** isolamento de regras de negócio em serviços com Mockito (`BrandService`, `ClienteService`, `VehicleService`, `EquipeService`, `UserService`, `RefreshTokenService`, `RateLimitService`).
-2. **Testes de Integração Web (MockMvc):** validação de contratos REST, serialização JSON e códigos HTTP (`BrandController`, `ClienteController`, `VehicleController`, `EquipeController`, `HealthController`).
-3. **Testes de Segurança e Tokens:** autenticação completa, rotação atômica de refresh tokens e controle de acesso a endpoints do Actuator.
-4. **Testes de Persistência e Repositório (`@DataJpaTest`):** consultas derivadas, paginação e filtros case-insensitive contra banco em memória H2.
-5. **Testes de Concorrência e Lock Otimista:** validação de versionamento (`@Version`) contra conflitos de escrita concorrente.
-6. **Testes de Tratamento de Exceções:** serialização padronizada de `ResourceNotFoundException`, `BusinessException` e Bean Validation no `GlobalExceptionHandler`.
-
----
-
-## Endpoints úteis
-
-Os caminhos abaixo servem como referência durante o desenvolvimento. A disponibilidade depende da configuração ativa e das permissões do usuário autenticado.
-
-| Finalidade | Endpoint |
-|---|---|
-| Login | `POST /api/v1/auth/login` |
-| Cadastro de usuário | `POST /api/v1/auth/register` |
-| Renovação de token | `POST /api/v1/auth/refresh` |
-| Logout | `POST /api/v1/auth/logout` |
-| Gerenciamento de clientes | `/api/v1/clientes` |
-| Registros diários | Consulte a rota configurada no Swagger UI |
-| Gerenciamento de equipes | `/api/v1/equipes` |
-| Gerenciamento de veículos | `/api/v1/vehicles` |
-| Gerenciamento de marcas | `/api/v1/brands` |
-| Verificação de saúde | `GET /actuator/health` |
-| Métricas operacionais | `GET /actuator/metrics` |
-| Swagger UI | `/swagger-ui/index.html` |
-| Especificação OpenAPI | `/v3/api-docs` |
-
-Para consultar a lista definitiva de rotas, os DTOs aceitos, os códigos HTTP e os requisitos de segurança, utilize o Swagger UI da aplicação em execução.
-
----
-
-## Boas práticas de desenvolvimento
-
-- Mantenha as chaves primárias separadas dos identificadores exibidos na interface.
-- Utilize DTOs para controlar os dados recebidos e retornados pela API.
-- Centralize as validações de negócio na camada de serviço.
-- Garanta que as permissões sejam verificadas no backend, não apenas no frontend.
-- Utilize migrations do Flyway para evoluir o esquema do banco.
-- Não versione credenciais ou segredos.
-- Não altere migrations já aplicadas em ambientes compartilhados.
-- Confira se a documentação dos endpoints corresponde ao comportamento real da aplicação antes de publicar uma nova versão.
+### Categorias de Testes Cobertas
+1. **Testes Unitários de Serviços**: Isolamento com Mockito (`BrandService`, `ClienteService`, `VehicleService`, `EquipeService`, `UserService`, `RefreshTokenService`, `RateLimitService`).
+2. **Testes de Integração Web (MockMvc)**: Validação de endpoints, serialização JSON e códigos HTTP.
+3. **Testes de Segurança e Tokens**: Rotação atômica de refresh tokens, revogação e autorização por role.
+4. **Testes de Persistência (`@DataJpaTest`)**: Consultas derivadas, paginação e filtros contra banco H2.
+5. **Testes de Concorrência e Lock Otimista**: Validação de controle de concorrência com `@Version`.
+6. **Testes de Tratamento Global de Exceções**: Padronização de erros RFC 7807 no `GlobalExceptionHandler`.
