@@ -42,8 +42,8 @@ public class SecurityConfigurations {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // define regras de autorizacao por rota
                 .authorizeHttpRequests(req -> req
-                        // libera autenticacao, documentacao e verificacao de saude
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                        // libera exclusivamente login, refresh token, documentacao e verificacao de saude
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

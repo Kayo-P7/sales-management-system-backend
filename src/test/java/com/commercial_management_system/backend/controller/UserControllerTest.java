@@ -1,6 +1,5 @@
 package com.commercial_management_system.backend.controller;
 
-import com.commercial_management_system.backend.dto.user.UserRequest;
 import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
@@ -54,23 +53,14 @@ class UserControllerTest {
                 .build();
     }
 
-    // valida cadastro de usuario com retorno 201 created
+    // valida que criacao de usuario via http e rejeitada com 405 method not allowed
     @Test
-    @DisplayName("deve cadastrar usuario e retornar status 201")
-    void deveCadastrarUsuarioRetornando201() throws Exception {
-        UserRequest request = new UserRequest("Carlos Silva", "carlos@example.com", "11988887777", "senha123", UserType.ROLE_ADMIN);
-        UserResponse response = new UserResponse(1L, "Carlos Silva", "carlos@example.com", "11988887777", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
-
-        when(userService.salvar(any(UserRequest.class))).thenReturn(response);
-
+    @DisplayName("deve rejeitar criacao de usuario via post com status 405")
+    void deveRejeitarCriacaoDeUsuarioViaHttp() throws Exception {
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Carlos Silva"))
-                .andExpect(jsonPath("$.email").value("carlos@example.com"))
-                .andExpect(jsonPath("$.userType").value("ROLE_ADMIN"));
+                        .content("{}"))
+                .andExpect(status().isMethodNotAllowed());
     }
 
     // valida listagem de usuarios com retorno 200 ok
