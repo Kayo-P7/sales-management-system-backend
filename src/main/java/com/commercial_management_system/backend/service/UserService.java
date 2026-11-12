@@ -3,6 +3,7 @@ package com.commercial_management_system.backend.service;
 import com.commercial_management_system.backend.dto.user.UserRequest;
 import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.enums.UserStatus;
+import com.commercial_management_system.backend.exception.BusinessException;
 import com.commercial_management_system.backend.exception.UserAlreadyActivedException;
 import com.commercial_management_system.backend.exception.UserAlreadyDeactivedException;
 import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
@@ -13,6 +14,8 @@ import com.commercial_management_system.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +74,11 @@ public class UserService {
     // desativa usuario no sistema sem excluir o registro fisico
     @Transactional
     public void desativar(Long id) {
+        // impede que o usuario autenticado inative a propria conta e perca o acesso
+        if (id.equals(getUsuarioAutenticadoId())) {
+            throw new BusinessException("nao e permitido desativar o proprio usuario");
+        }
+
         User user = buscarEntidadePorId(id);
 
         if (user.getUserStatus() == UserStatus.INACTIVE) {
@@ -92,5 +100,16 @@ public class UserService {
 
         user.setUserStatus(UserStatus.ACTIVE);
         userRepository.save(user);
+    }
+
+    // recupera o identificador do usuario autenticado na requisicao
+    private Long getUsuarioAutenticadoId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof User usuario)) {
+            throw new IllegalStateException("nao foi possivel identificar o usuario autenticado");
+        }
+
+        return usuario.getId();
     }
 }

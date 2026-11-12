@@ -4,10 +4,12 @@ import com.commercial_management_system.backend.dto.user.UserRequest;
 import com.commercial_management_system.backend.dto.user.UserResponse;
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
+import com.commercial_management_system.backend.exception.BusinessException;
 import com.commercial_management_system.backend.exception.UserAlreadyExistsException;
 import com.commercial_management_system.backend.mapper.UserMapper;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -44,6 +48,12 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    // limpa o contexto de seguranca entre os testes
+    @AfterEach
+    void limparContextoDeSeguranca() {
+        SecurityContextHolder.clearContext();
+    }
 
     // valida que a senha do usuario e salva criptografada
     @Test
@@ -99,6 +109,28 @@ class UserServiceTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
         assertThrows(UserAlreadyExistsException.class, () -> userService.salvar(request));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    // valida bloqueio da auto inativacao do usuario autenticado
+    @Test
+    @DisplayName("deve impedir que o usuario autenticado desative a propria conta")
+    void deveImpedirAutoDesativacao() {
+        User autenticado = new User(
+                "Victor",
+                "victor@example.com",
+                "11999999999",
+                "hash",
+                UserType.ROLE_ADMIN,
+                UserStatus.ACTIVE
+        );
+        autenticado.setId(1L);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(autenticado, null, autenticado.getAuthorities())
+        );
+
+        assertThrows(BusinessException.class, () -> userService.desativar(1L));
         verify(userRepository, never()).save(any(User.class));
     }
 
