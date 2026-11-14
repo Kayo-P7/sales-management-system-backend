@@ -2,7 +2,7 @@ name: Deploy Backend to VPS
 
 on:
   push:
-    branches: [ main ] # dispara sempre que entrar codigo na branch main
+    branches: [ master ] # dispara sempre que entrar codigo na branch main
 
 jobs:
   build-and-deploy:
