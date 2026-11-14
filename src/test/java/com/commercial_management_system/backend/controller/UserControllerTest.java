@@ -1,6 +1,8 @@
 package com.commercial_management_system.backend.controller;
 
+import com.commercial_management_system.backend.dto.user.UserRequest;
 import com.commercial_management_system.backend.dto.user.UserResponse;
+import com.commercial_management_system.backend.dto.user.UserUpdateRequest;
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.enums.UserType;
 import com.commercial_management_system.backend.service.UserService;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,14 +56,36 @@ class UserControllerTest {
                 .build();
     }
 
-    // valida que criacao de usuario via http e rejeitada com 405 method not allowed
+    // valida cadastro de usuario com retorno 201 created
     @Test
-    @DisplayName("deve rejeitar criacao de usuario via post com status 405")
-    void deveRejeitarCriacaoDeUsuarioViaHttp() throws Exception {
+    @DisplayName("deve cadastrar usuario e retornar status 201")
+    void deveCadastrarUsuarioRetornando201() throws Exception {
+        UserRequest request = new UserRequest("Carlos Silva", "carlos@example.com", "11988887777", "senha123", UserType.ROLE_ADMIN);
+        UserResponse response = new UserResponse(1L, "Carlos Silva", "carlos@example.com", "11988887777", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
+        when(userService.salvar(any(UserRequest.class))).thenReturn(response);
+
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isMethodNotAllowed());
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Carlos Silva"));
+    }
+
+    // valida atualizacao de usuario com retorno 200 ok
+    @Test
+    @DisplayName("deve atualizar usuario e retornar status 200")
+    void deveAtualizarUsuarioRetornando200() throws Exception {
+        UserUpdateRequest request = new UserUpdateRequest("Carlos Silva Atualizado", "carlos@example.com", "11988887777", null, UserType.ROLE_ADMIN);
+        UserResponse response = new UserResponse(1L, "Carlos Silva Atualizado", "carlos@example.com", "11988887777", UserType.ROLE_ADMIN, UserStatus.ACTIVE);
+        when(userService.atualizar(eq(1L), any(UserUpdateRequest.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Carlos Silva Atualizado"));
     }
 
     // valida listagem de usuarios com retorno 200 ok

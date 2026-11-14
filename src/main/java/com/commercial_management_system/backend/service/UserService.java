@@ -2,6 +2,7 @@ package com.commercial_management_system.backend.service;
 
 import com.commercial_management_system.backend.dto.user.UserRequest;
 import com.commercial_management_system.backend.dto.user.UserResponse;
+import com.commercial_management_system.backend.dto.user.UserUpdateRequest;
 import com.commercial_management_system.backend.enums.UserStatus;
 import com.commercial_management_system.backend.exception.BusinessException;
 import com.commercial_management_system.backend.exception.UserAlreadyActivedException;
@@ -41,6 +42,35 @@ public class UserService {
         User user = userMapper.toUser(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.password()));
         user.setUserStatus(UserStatus.ACTIVE);
+
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
+    }
+
+    // atualiza dados cadastrais de usuario existente
+    @Transactional
+    public UserResponse atualizar(Long id, UserUpdateRequest request) {
+        User user = buscarEntidadePorId(id);
+
+        String email = request.email().trim();
+        if (!user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("email ja cadastrado no sistema");
+        }
+
+        String telephone = request.telephone().trim();
+        if (!user.getTelephone().equals(telephone) && userRepository.existsByTelephone(telephone)) {
+            throw new UserAlreadyExistsException("telefone ja cadastrado no sistema");
+        }
+
+        user.setName(request.name().trim());
+        user.setEmail(email);
+        user.setTelephone(telephone);
+        if (request.userType() != null) {
+            user.setUserType(request.userType());
+        }
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.password()));
+        }
 
         userRepository.save(user);
         return userMapper.toUserResponse(user);
