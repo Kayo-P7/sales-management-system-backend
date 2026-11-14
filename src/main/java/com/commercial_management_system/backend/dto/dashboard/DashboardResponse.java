@@ -26,6 +26,9 @@ public record DashboardResponse(
         long totalNegotiations,
 
         @Schema(description = "desempenho consolidado por vendedor")
-        List<SellerPerformanceResponse> salesBySeller
+        List<SellerPerformanceResponse> salesBySeller,
+
+        @Schema(description = "evolução mensal das vendas dos últimos seis meses")
+        List<SalesEvolutionResponse> salesEvolution
 ) {
 }
