@@ -3,17 +3,10 @@ package com.commercial_management_system.backend.controller;
 import com.commercial_management_system.backend.dto.AuthenticationRequest;
 import com.commercial_management_system.backend.dto.RefreshTokenRequest;
 import com.commercial_management_system.backend.dto.TokenResponse;
-import com.commercial_management_system.backend.dto.erro.ErroResponse;
 import com.commercial_management_system.backend.model.RefreshToken;
 import com.commercial_management_system.backend.model.User;
 import com.commercial_management_system.backend.service.RefreshTokenService;
 import com.commercial_management_system.backend.service.TokenService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "autenticação", description = "endpoints para login e registro de usuários no sistema")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -36,15 +28,6 @@ public class AuthenticationController {
     private final RefreshTokenService refreshTokenService;
 
     // autentica credenciais e retorna token jwt com refresh token
-    @Operation(summary = "realizar login", description = "autentica o usuario atraves de email e senha retornando o par de tokens")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "login realizado com sucesso",
-                    content = @Content(schema = @Schema(implementation = TokenResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados de entrada invalidos",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "401", description = "credenciais invalidas",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    })
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody AuthenticationRequest authRequest) {
         // cria token de autenticacao com email e senha informados
@@ -63,15 +46,6 @@ public class AuthenticationController {
     }
 
     // renova token de acesso aplicando rotacao no refresh token
-    @Operation(summary = "renovar token", description = "gera novo par de access token e refresh token a partir de um refresh token valido")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "tokens renovados com sucesso",
-                    content = @Content(schema = @Schema(implementation = TokenResponse.class))),
-            @ApiResponse(responseCode = "400", description = "dados de entrada invalidos",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class))),
-            @ApiResponse(responseCode = "401", description = "refresh token invalido ou expirado",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    })
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         TokenResponse response = refreshTokenService.renovarToken(request.refreshToken());
@@ -79,12 +53,6 @@ public class AuthenticationController {
     }
 
     // encerra a sessao invalidando o refresh token
-    @Operation(summary = "encerrar sessão (logout)", description = "revoga o refresh token informado para encerrar a sessao do usuario")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "sessao encerrada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "dados de entrada invalidos",
-                    content = @Content(schema = @Schema(implementation = ErroResponse.class)))
-    })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         refreshTokenService.revogarRefreshToken(request.refreshToken());

@@ -30,10 +30,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (uri == null) {
             return true;
         }
-        // nao aplica rate limit em rotas de documentacao e verificacao de integridade
+        // nao aplica rate limit fora da api ou na rota de verificacao de integridade
         return !uri.startsWith("/api/")
-                || uri.startsWith("/swagger-ui")
-                || uri.startsWith("/v3/api-docs")
                 || "/health".equals(uri);
     }
 
